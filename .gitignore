@@ -1,0 +1,12 @@
+.vscode
+.venv
+.pylintrc
+__pycache__
+*.ipynb
+.rx
+.rxignore
+rx-out
+rx/proto/rx_pb2*
+*.log
+build
+dist

@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package rx;
+
+message EmptyMessage {}
+
+message Remote {
+  message Image {
+    string docker = 1;
+    string tag = 2;
+  }
+  message Hardware {
+    string processor = 1;
+  }
+  Image image = 1;
+  Hardware hardware = 2;
+}
+
+message Python {
+}
+
+message Environment {
+  Remote alloc = 1;
+  Python python = 2;
+}
+
+message Delta {
+  repeated string add_path = 1;
+  repeated string add_dir = 2;
+  repeated string remove_path = 3;
+}
+
+enum StatusCode {
+  OK = 0;
+  UNKNOWN = 1;
+  INVALID = 2;
+  NOT_FOUND = 3;
+  UNAUTHORIZED = 4;
+}
+
+message Result {
+  StatusCode code = 1;
+  string message = 2;
+}
+
+message RsyncSource {
+  int64 machine_id = 1;
+  string directory = 2;
+  bytes public_key = 3;
+}
+
+message RsyncDestination {
+  string daemon_module = 1;
+}
+
+// Requests and responses
+
+message ExecRequest {
+  string workspace_id = 1;
+  repeated string argv = 2;
+  RsyncSource rsync_source = 3;
+}
+
+message ExecResponse {
+  string execution_id = 1;
+  bytes stdout = 2;
+  bytes stderr = 3;
+  Delta output_files = 4;
+  Result result = 5;
+}
+
+message GetUserResponse {
+  Result result = 1;
+  string username = 2;
+}
+
+message InitRequest {
+  RsyncSource rsync_source = 1;
+  Environment target_env = 2;
+}
+
+message InitResponse {
+  Result result = 1;
+  RsyncDestination rsync_dest = 2;
+  string worker_addr = 3;
+  string workspace_id = 4;
+}
+
+message InstallDepsRequest {
+  string workspace_id = 1;
+}
+
+message InstallDepsResponse {
+  Result result = 1;
+}
+
+message SetUsernameRequest {
+  string username = 1;
+}
+
+message SetUsernameResponse {
+  Result result = 1;
+}
+
+service ExecutionService {
+  rpc InstallDeps(InstallDepsRequest) returns (InstallDepsResponse) {}
+  rpc Exec(ExecRequest) returns (stream ExecResponse) {}
+}
+
+service SetupService {
+  rpc GetUser(EmptyMessage) returns (GetUserResponse) {}
+  rpc Init(InitRequest) returns (InitResponse) {}
+  rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}
+}

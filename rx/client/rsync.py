@@ -1,0 +1,95 @@
+from collections import abc
+import pathlib
+import subprocess
+
+from absl import app
+from absl import flags
+from absl import logging
+
+from rx.client.configuration import config_base
+from rx.client.configuration import local
+
+_RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
+
+
+class RsyncClient:
+  """Rsync tools."""
+
+  def __init__(
+      self, sync_dir: pathlib.Path, remote_cfg: abc.Mapping):
+    self._sync_dir = sync_dir
+    self._cfg = remote_cfg
+    self._rsync_path = (
+      _RSYNC_PATH.value if _RSYNC_PATH.value else
+      str(local.get_bundle_path() / 'bin/rsync'))
+
+  @property
+  def host(self) -> str:
+    return self._cfg['worker_addr']
+
+  @property
+  def workspace_id(self) -> str:
+    return self._cfg['workspace_id']
+
+  @property
+  def _upload_path(self) -> pathlib.Path:
+    return (
+      pathlib.Path(self._cfg['daemon_module']) / self.workspace_id)
+
+  def from_remote(self, source: str, dest: pathlib.Path) -> int:
+    """Copies output files from the remote machine to dest."""
+    assert dest.is_dir(), f'Destination {dest} must be a directory'
+    # The ancient version of rsync that comes on Mac doesn't allow syncing
+    # multiple paths, so just do one at a time.
+    remote_path = self._upload_path / source
+    daemon = f'{self._cfg["worker_addr"]}::{remote_path}/'
+    cmd = [
+        self._rsync_path,
+        '--archive',
+        '--compress',
+        '--delete',
+        f'--exclude-from={self._sync_dir / local.IGNORE}',
+        daemon,
+        str(dest)]
+    exit_code = _run_rsync(cmd)
+    if exit_code != 0:
+      return exit_code
+    return 0
+
+  def to_remote(self) -> int:
+    """Copies files/dirs to remote."""
+    daemon = f'{self._cfg["worker_addr"]}::{self._upload_path}'
+    cmd = [
+        self._rsync_path,
+        '--archive',
+        '--compress',
+        '--delete',
+        '--inplace',
+        f'--exclude-from={self._sync_dir / local.IGNORE}',
+        f'{self._sync_dir}/',
+        daemon
+    ]
+    return _run_rsync(cmd)
+
+
+def _run_rsync(cmd: list[str]) -> int:
+  logging.debug('Running %s', cmd)
+  try:
+    subprocess.run(cmd, check=True)
+  except subprocess.CalledProcessError as e:
+    logging.error('Error running `%s`', ' '.join(e.cmd))
+    if e.returncode == 10:
+      logging.error('Is the daemon running?')
+    return e.returncode
+  return 0
+
+
+def main(argv):
+  del argv
+  rc = RsyncClient(
+    pathlib.Path.cwd(),
+    config_base.ReadOnlyConfig(pathlib.Path.cwd() / '.rx' / 'remote'))
+
+
+if __name__ == '__main__':
+  app.run(main)
