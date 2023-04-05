@@ -151,8 +151,10 @@ class LoginManager:
 
   def refresh_access_token(self):
     """Refreshes the access token when it expires."""
-    assert _get_refresh_token_file().exists()
-    with open(_get_refresh_token_file(), mode='rt', encoding='utf-8') as fh:
+    refresh_file = _get_refresh_token_file()
+    access_file = _get_access_token_file()
+    assert refresh_file.exists()
+    with open(refresh_file, mode='rt', encoding='utf-8') as fh:
       refresh_token = json.load(fh)
     data = {
       'client_id': _CLIENT_ID,
@@ -167,6 +169,8 @@ class LoginManager:
       raise AuthError(
         f'Unable to connect to oauth2.googleapis.com, is your internet up?')
     if resp.status_code != 200:
+      # Refreshing went wrong, remove everything!
+      _delete_auth_files()
       raise AuthError(
         f'Unable to refresh log in: {resp.reason} [{resp.status_code}]\n' +
         resp.text)
@@ -184,7 +188,7 @@ class LoginManager:
     try:
       id_token = decode_id_token(self._access_token['id_token'])
     except ValueError as e:
-      _get_refresh_token_file().unlink()
+      _delete_auth_files()
       print('Could not read token, please try logging in again.')
       raise e
     if is_expired(id_token):
@@ -236,8 +240,11 @@ class LoginManager:
     self._server.serve_forever()
 
 
-class AuthError(RuntimeError):
-  pass
+def _delete_auth_files():
+  """Remove all files associated with logging in."""
+  _get_refresh_token_file().unlink()
+  if _get_access_token_file().exists():
+    _get_access_token_file().unlink()
 
 
 def is_expired(id_token: dict[str, Any]) -> bool:
@@ -271,6 +278,10 @@ def _no_auth_login() -> dict[str, Any]:
     'token_type': 'Bearer',
     'id_token': id_token,
   }
+
+
+class AuthError(RuntimeError):
+  pass
 
 
 def main(argv):
