@@ -92,6 +92,7 @@ message InstallDepsRequest {
 
 message InstallDepsResponse {
   Result result = 1;
+  string stdout = 2;
 }
 
 message SetUsernameRequest {
@@ -103,7 +104,7 @@ message SetUsernameResponse {
 }
 
 service ExecutionService {
-  rpc InstallDeps(InstallDepsRequest) returns (InstallDepsResponse) {}
+  rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(ExecRequest) returns (stream ExecResponse) {}
 }
 
