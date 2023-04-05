@@ -1,4 +1,5 @@
 import pathlib
+import sys
 
 from absl import logging
 
@@ -19,9 +20,13 @@ class InitCommand:
     else:
       logging.info('Workspace already exists, resetting it.')
     client = init_client.Client(self._config)
-    client.create_user_or_log_in()
-    return client.init()
-
+    try:
+      client.create_user_or_log_in()
+      return client.init()
+    except init_client.InitError as e:
+      sys.stderr.write(f'{e}\n')
+      sys.stderr.flush()
+      return e.code
 
 if __name__ == '__main__':
   print('Call exec.')

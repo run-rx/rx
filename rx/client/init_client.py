@@ -55,11 +55,9 @@ class Client():
     try:
       resp = self._stub.Init(req, metadata=self._metadata)
     except grpc.RpcError as e:
-      sys.stderr.write(e.details())
-      return -1
+      raise InitError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
-      sys.stderr.write(resp.result.message)
-      return -1
+      raise InitError(resp.result.message, -1)
 
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
@@ -75,11 +73,10 @@ class Client():
     try:
       resp = self._stub.SetUsername(req, metadata=self._metadata)
     except grpc.RpcError as e:
-      sys.stderr.write(e.details())
-      raise e
+      raise InitError(f'Could not set username: {e.details()}', -1)
     if resp.result.code == rx_pb2.INVALID:
-      sys.stderr.write(resp.result.message)
-      raise RuntimeError(f'Invalid username: {username}')
+      raise InitError(
+        f'{resp.result.message}\nInvalid username: {username}', rx_pb2.INVALID)
     return username
 
   def _get_username(self) -> str:
@@ -95,8 +92,7 @@ class Client():
     try:
       resp = self._stub.GetUser(rx_pb2.EmptyMessage(), metadata=self._metadata)
     except grpc.RpcError as e:
-      sys.stderr.write(e.details())
-      raise e
+      raise InitError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
 
   def _run_initial_rsync(self):
@@ -110,11 +106,25 @@ class Client():
     channel = grpc.insecure_channel(grpc_addr)
     stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     req = rx_pb2.InstallDepsRequest(workspace_id=workspace_id)
+    resp = None
     try:
-      resp = stub.InstallDeps(req, metadata=self._metadata)
+      for resp in stub.InstallDeps(req, metadata=self._metadata):
+        if resp.stdout:
+          sys.stdout.write(resp.stdout)
     except grpc.RpcError as e:
-      sys.stderr.write(e.details())
-      return -1
-    if resp.result.code:
-      sys.stderr.write(resp.result.message)
-    return resp.result.code
+      raise InitError(e.details(), -1)
+    if resp and resp.HasField('result') and resp.result.code:
+      raise InitError(resp.result.message, resp.result.code)
+    return 0
+
+
+class InitError(RuntimeError):
+  """Class to repackage any init errors that happen and add an exit code."""
+
+  def __init__(self, message, code, *args):
+    super().__init__(message, *args)
+    self._code = code
+
+  @property
+  def code(self):
+    return self._code
