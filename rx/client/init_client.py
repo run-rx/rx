@@ -114,7 +114,7 @@ class Client():
     try:
       for resp in stub.InstallDeps(req, metadata=self._metadata):
         if resp.stdout:
-          sys.stdout.write(resp.stdout)
+          sys.stdout.buffer.write(resp.stdout)
     except grpc.RpcError as e:
       raise InitError(e.details(), -1)
     if resp and resp.HasField('result') and resp.result.code:

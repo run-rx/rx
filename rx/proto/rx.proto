@@ -92,7 +92,7 @@ message InstallDepsRequest {
 
 message InstallDepsResponse {
   Result result = 1;
-  string stdout = 2;
+  bytes stdout = 2;
 }
 
 message SetUsernameRequest {
