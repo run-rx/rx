@@ -152,8 +152,11 @@ class LoginManager:
   def refresh_access_token(self):
     """Refreshes the access token when it expires."""
     refresh_file = _get_refresh_token_file()
-    access_file = _get_access_token_file()
-    assert refresh_file.exists()
+    if not refresh_file.exists():
+      # Access token was expired but the refresh token doesn't exist. Just start
+      # over.
+      _delete_auth_files()
+      raise AuthError('Could not log in, please try again.')
     with open(refresh_file, mode='rt', encoding='utf-8') as fh:
       refresh_token = json.load(fh)
     data = {
@@ -189,8 +192,8 @@ class LoginManager:
       id_token = decode_id_token(self._access_token['id_token'])
     except ValueError as e:
       _delete_auth_files()
-      print('Could not read token, please try logging in again.')
-      raise e
+      logging.exception(e)
+      raise AuthError('Could not read token, please try logging in again.')
     if is_expired(id_token):
       self.refresh_access_token()
 
@@ -242,7 +245,8 @@ class LoginManager:
 
 def _delete_auth_files():
   """Remove all files associated with logging in."""
-  _get_refresh_token_file().unlink()
+  if _get_refresh_token_file().exists():
+    _get_refresh_token_file().unlink()
   if _get_access_token_file().exists():
     _get_access_token_file().unlink()
 

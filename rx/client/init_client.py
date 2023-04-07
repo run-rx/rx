@@ -30,7 +30,10 @@ class Client():
 
   def create_user_or_log_in(self) -> user.User:
     # First, make sure we're logged in with Google.
-    self._login.login()
+    try:
+      self._login.login()
+    except login.AuthError as e:
+      raise InitError(e, -1)
     self._metadata += self._login.grpc_metadata
     email = self._login.id_token['email']
 
@@ -71,6 +74,7 @@ class Client():
     self._run_initial_rsync()
     self._install_deps(f'{resp.worker_addr}', resp.workspace_id)
     print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
+    return 0
 
   def _create_username(self) -> str:
     username = user.username_prompt(self._login.id_token['email'])
