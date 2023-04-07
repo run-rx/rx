@@ -35,9 +35,13 @@ class Client():
     email = self._login.id_token['email']
 
     # Check if user is set up.
+    # TODO: it would be better to read the username from the config and
+    # automatically try to set it on the remote. However, this generally
+    # shouldn't come up for normal users.
+    username = self._get_username()
     if not user.has_config(self._local_cfg.cwd):
       with user.CreateUser(self._local_cfg.cwd) as c:
-        c['username'] = self._get_username()
+        c['username'] = username
         c['email'] = email
     return user.User(self._local_cfg.cwd, email)
 
