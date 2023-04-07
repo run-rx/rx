@@ -66,10 +66,11 @@ class Client():
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
       r['worker_addr'] = resp.worker_addr
-      r['grpc_addr'] = f'{resp.worker_addr}:50051'
+      r['grpc_addr'] = f'{resp.worker_addr}'
       r['daemon_module'] = resp.rsync_dest.daemon_module
     self._run_initial_rsync()
-    return self._install_deps(f'{resp.worker_addr}:50051', resp.workspace_id)
+    self._install_deps(f'{resp.worker_addr}', resp.workspace_id)
+    print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
 
   def _create_username(self) -> str:
     username = user.username_prompt(self._login.id_token['email'])
@@ -115,6 +116,7 @@ class Client():
       for resp in stub.InstallDeps(req, metadata=self._metadata):
         if resp.stdout:
           sys.stdout.buffer.write(resp.stdout)
+          sys.stdout.buffer.flush()
     except grpc.RpcError as e:
       raise InitError(e.details(), -1)
     if resp and resp.HasField('result') and resp.result.code:

@@ -22,10 +22,14 @@ class RsyncClient:
     self._rsync_path = (
       _RSYNC_PATH.value if _RSYNC_PATH.value else
       str(local.get_bundle_path() / 'bin/rsync'))
+    self._daemon_addr = self._cfg["worker_addr"]
+    if config_base.is_local():
+      # Remove the port (rsync isn't listening on 50051).
+      self._daemon_addr = self._daemon_addr.split(':')[0]
 
   @property
   def host(self) -> str:
-    return self._cfg['worker_addr']
+    return self._daemon_addr
 
   @property
   def workspace_id(self) -> str:
@@ -42,7 +46,7 @@ class RsyncClient:
     # The ancient version of rsync that comes on Mac doesn't allow syncing
     # multiple paths, so just do one at a time.
     remote_path = self._upload_path / source
-    daemon = f'{self._cfg["worker_addr"]}::{remote_path}/'
+    daemon = f'{self._daemon_addr}::{remote_path}/'
     cmd = [
         self._rsync_path,
         '--archive',
@@ -58,7 +62,7 @@ class RsyncClient:
 
   def to_remote(self) -> int:
     """Copies files/dirs to remote."""
-    daemon = f'{self._cfg["worker_addr"]}::{self._upload_path}'
+    daemon = f'{self._daemon_addr}::{self._upload_path}'
     cmd = [
         self._rsync_path,
         '--archive',
