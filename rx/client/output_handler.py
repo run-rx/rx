@@ -24,8 +24,13 @@ class OutputHandler:
     if resp.stderr:
       sys.stderr.buffer.write(resp.stderr)
       sys.stderr.flush()
-    for pth_str in resp.output_files.add_path:
+    for pth_str in resp.output_files:
       self._current_outputs.add(pathlib.Path(pth_str))
 
   def write_outputs(self, rsync_client: rsync.RsyncClient):
+    if not self._current_outputs:
+      return
     rsync_client.from_remote('rx-out', pathlib.Path('rx-out'))
+    print('Created outputs:')
+    for pth in self.remote_paths:
+      print(f'  {pth}')

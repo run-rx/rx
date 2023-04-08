@@ -11,6 +11,7 @@ from rx.client.configuration import remote
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
+# TODO: set up UI for looking at previous executions.
 _BASE_URI = 'https://la-brea.run-rx.com'
 _NOT_REACHABLE = 1
 
@@ -40,32 +41,24 @@ class Client():
       return result
     result = None
 
-    req = rx_pb2.ExecRequest(
+    request = rx_pb2.ExecRequest(
       workspace_id=self._rsync.workspace_id,
       argv=argv,
       rsync_source=self._local_cfg.rsync_source)
 
     out_handler = output_handler.OutputHandler()
-    first = True
+    response = None
     try:
-      for resp in self._stub.Exec(req, metadata=self._metadata):
-        if first:
-          print(self._local_cfg.color_str(f'{_BASE_URI}/{resp.execution_id}'))
-          first = False
-        out_handler.handle(resp)
-        if resp.HasField('result'):
-          result = resp.result
+      for response in self._stub.Exec(request, metadata=self._metadata):
+        out_handler.handle(response)
     except grpc.RpcError as e:
       logging.error(f'Error contacting {self._uri}: {e.details()}')
       return _NOT_REACHABLE
-    outputs = out_handler.remote_paths
-    if len(outputs):
-      out_handler.write_outputs(self._rsync)
-      output_list = '\n'.join(outputs)
-      print(f'Created outputs:\n{output_list}')
-    if result is None:
-      logging.error('No exit code received')
-      return _NOT_REACHABLE
-    if result.code != 0:
-      logging.error(result.message)
-    return result.code
+
+    out_handler.write_outputs(self._rsync)
+
+    if (response is not None and response.HasField('result') and
+        response.result.code != 0):
+      logging.error(response.result.message)
+      return response.result.code
+    return 0

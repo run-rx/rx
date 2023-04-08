@@ -62,11 +62,11 @@ message ExecRequest {
 }
 
 message ExecResponse {
-  string execution_id = 1;
-  bytes stdout = 2;
-  bytes stderr = 3;
-  Delta output_files = 4;
-  Result result = 5;
+  Result result = 1;
+  string execution_id = 2;
+  bytes stdout = 3;
+  bytes stderr = 4;
+  repeated string output_files = 5;
 }
 
 message GetUserResponse {
