@@ -3,6 +3,7 @@ from typing import List
 from absl import logging
 import grpc
 
+from rx.client import grpc_helper
 from rx.client import login
 from rx.client import output_handler
 from rx.client import rsync
@@ -23,7 +24,7 @@ class Client():
     remote_cfg = remote.Remote(local_cfg.cwd)
     self._rsync = rsync.RsyncClient(local_cfg.cwd, remote_cfg)
     self._uri = remote_cfg['grpc_addr']
-    channel = grpc.insecure_channel(self._uri)
+    channel = grpc_helper.get_channel(self._uri)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     self._metadata = local.get_grpc_metadata()
     self._local_cfg = local_cfg

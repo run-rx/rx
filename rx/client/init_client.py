@@ -3,6 +3,7 @@ import sys
 from absl import logging
 import grpc
 
+from rx.client import grpc_helper
 from rx.client import login
 from rx.client import rsync
 from rx.client import user
@@ -17,7 +18,7 @@ class Client():
   """Handle contacting the remote server."""
 
   def __init__(self, local_cfg: local.LocalConfig):
-    channel = _get_channel(config_base.TREX_HOST.value)
+    channel = grpc_helper.get_channel(config_base.TREX_HOST.value)
     self._stub = rx_pb2_grpc.SetupServiceStub(channel)
     self._local_cfg = local_cfg
     self._login = login.LoginManager()
@@ -114,7 +115,7 @@ class Client():
       logging.info('Copied files to %s', self._rsync.host)
 
   def _install_deps(self, grpc_addr: str, workspace_id: str) -> int:
-    channel = _get_channel(grpc_addr)
+    channel = grpc_helper.get_channel(grpc_addr)
     stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     req = rx_pb2.InstallDepsRequest(workspace_id=workspace_id)
     resp = None
@@ -140,9 +141,3 @@ class InitError(RuntimeError):
   @property
   def code(self):
     return self._code
-
-
-def _get_channel(addr: str) -> grpc.Channel:
-  return (
-    grpc.insecure_channel(addr) if config_base.is_local() else
-    grpc.secure_channel(addr, credentials=grpc.ssl_channel_credentials()))
