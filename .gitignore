@@ -8,5 +8,6 @@ __pycache__
 rx-out
 rx/proto/rx_pb2*
 *.log
+*.spec
 build
 dist
