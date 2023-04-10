@@ -11,7 +11,7 @@ RX_DIR = pathlib.Path('.rx')
 # Configuration files are placed under a directory with this name (this is just
 # to make development easier, so we can have separate configs for
 # local/dev/prod).
-GRPC_HOST = flags.DEFINE_string(
+TREX_HOST = flags.DEFINE_string(
   'grpc_host', 'trex.run-rx.com', 'GRPC host to connect to.')
 
 
@@ -62,8 +62,8 @@ class ReadWriteConfig(abc.MutableMapping, ReadOnlyConfig):
 
 def get_config_dir() -> pathlib.Path:
   """Returns the config directory path, e.g., .rx/localhost/config."""
-  return RX_DIR / GRPC_HOST.value / 'config'
+  return RX_DIR / TREX_HOST.value / 'config'
 
 
 def is_local() -> bool:
-  return GRPC_HOST.value.startswith('localhost')
+  return TREX_HOST.value.startswith('localhost')
