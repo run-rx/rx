@@ -34,6 +34,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
     self._workspace_dir = workspace_dir
 
   def setup_remote(self):
+    """Sets the "remote" field (and color) for the local config."""
     remote = _REMOTE.value
     remote_path = self._workspace_dir / _REMOTE_DIR / remote
     try:
@@ -116,6 +117,7 @@ def create_local_config() -> LocalConfig:
   config_dir.mkdir(exist_ok=True, parents=True)
   with LocalConfigWriter(cwd) as c:
     c.setup_remote()
+    c['project_name'] = _find_project_name(cwd)
   return LocalConfig(cwd)
 
 
@@ -136,6 +138,10 @@ def get_bundle_path() -> pathlib.Path:
     # We are running in a normal Python environment.
     # __file__ is ./rx/client/configuration/local.py, so this resolves to ./.
     return pathlib.Path(__file__).resolve().parent.parent.parent.parent
+
+
+def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
+  return (('cv', CLIENT_VERSION),)
 
 
 def install_local_files(cwd: pathlib.Path):
@@ -165,6 +171,18 @@ def install_local_files(cwd: pathlib.Path):
   default_config.symlink_to('python-cpu')
 
 
+def _find_project_name(start_dir: pathlib.Path) -> str:
+  """Heuristic to find a reasonable name for this project."""
+  # Probably the git repo is rooted on a good name.
+  if (start_dir / '.git').exists():
+    return start_dir.name
+  for parent in start_dir.parents:
+    if (parent / '.git').exists():
+      return start_dir.name
+  # Maybe we haven't initialized git yet, use out name.
+  return start_dir.name
+
+
 def _get_local_config_file() -> pathlib.Path:
   """Return .rx/trex-dev.run-rx.com/config/local."""
   return config_base.get_config_dir() / 'local'
@@ -176,7 +194,3 @@ def _install_file(install_dir, config_dir, base_name):
   destination_path = config_dir / base_name
   if not destination_path.exists():
     shutil.copy(source_path, destination_path)
-
-
-def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
-  return (('cv', CLIENT_VERSION),)

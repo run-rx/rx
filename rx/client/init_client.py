@@ -52,6 +52,7 @@ class Client():
             'enthusiasm! Try setting --remote=python-cpu for now.')
       return -1
     req = rx_pb2.InitRequest(
+      project_name=self._local_cfg['project_name'],
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
     )

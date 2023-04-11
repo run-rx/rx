@@ -75,8 +75,9 @@ message GetUserResponse {
 }
 
 message InitRequest {
-  RsyncSource rsync_source = 1;
-  Environment target_env = 2;
+  string project_name = 1;
+  RsyncSource rsync_source = 2;
+  Environment target_env = 3;
 }
 
 message InitResponse {
