@@ -1,24 +1,24 @@
 import sys
 
 from absl import logging
+from google.protobuf import empty_pb2
 import grpc
 
 from rx.client import grpc_helper
 from rx.client import login
 from rx.client import rsync
 from rx.client import user
-from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
+_TIMEOUT = 10
 
 class Client():
   """Handle contacting the remote server."""
 
-  def __init__(self, local_cfg: local.LocalConfig):
-    channel = grpc_helper.get_channel(config_base.TREX_HOST.value)
+  def __init__(self, channel: grpc.Channel, local_cfg: local.LocalConfig):
     self._stub = rx_pb2_grpc.SetupServiceStub(channel)
     self._local_cfg = local_cfg
     self._login = login.LoginManager()
@@ -59,7 +59,8 @@ class Client():
     sys.stdout.write('Finding a remote worker... ')
     sys.stdout.flush()
     try:
-      resp = self._stub.Init(req, metadata=self._metadata)
+      # Five minute timeout.
+      resp = self._stub.Init(req, metadata=self._metadata, timeout=(5 * 60))
       sys.stdout.write('Done.\n')
     except grpc.RpcError as e:
       raise InitError(f'Could not initialize worker: {e.details()}', -1)
@@ -84,7 +85,8 @@ class Client():
     username = user.username_prompt(self._login.id_token['email'])
     req = rx_pb2.SetUsernameRequest(username=username)
     try:
-      resp = self._stub.SetUsername(req, metadata=self._metadata)
+      resp = self._stub.SetUsername(
+        req, metadata=self._metadata, timeout=_TIMEOUT)
     except grpc.RpcError as e:
       raise InitError(f'Could not set username: {e.details()}', -1)
     if resp.result.code == rx_pb2.INVALID:
@@ -103,7 +105,8 @@ class Client():
 
   def _get_username_from_rx(self) -> str:
     try:
-      resp = self._stub.GetUser(rx_pb2.EmptyMessage(), metadata=self._metadata)
+      resp = self._stub.GetUser(
+        empty_pb2.Empty(), metadata=self._metadata, timeout=_TIMEOUT)
     except grpc.RpcError as e:
       raise InitError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
@@ -121,7 +124,8 @@ class Client():
     req = rx_pb2.InstallDepsRequest(workspace_id=workspace_id)
     resp = None
     try:
-      for resp in stub.InstallDeps(req, metadata=self._metadata):
+      for resp in stub.InstallDeps(
+        req, metadata=self._metadata, timeout=(10 * 60)):
         if resp.stdout:
           sys.stdout.buffer.write(resp.stdout)
           sys.stdout.buffer.flush()

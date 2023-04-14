@@ -12,13 +12,16 @@ To run a command on a configured remote host:
 
 """
 import pathlib
+import tempfile
 
 from absl import app
 from absl import logging
 
-from rx.client.configuration import local
 from rx.client import executor
+from rx.client import grpc_helper
 from rx.client.commands import init
+from rx.client.configuration import local
+from rx.client.configuration import remote
 
 
 class ExecCommand:
@@ -31,8 +34,10 @@ class ExecCommand:
     if self._config is None:
       print ('Run `rx init` first!')
       return -1
-    client = executor.Client(self._config)
-    return self._try_exec(client)
+    remote_cfg = remote.Remote(self._config.cwd)
+    with grpc_helper.get_channel(remote_cfg['grpc_addr']) as ch:
+      client = executor.Client(ch, self._config, remote_cfg)
+      return self._try_exec(client)
 
   def _try_exec(self, client: executor.Client) -> int:
     """Sends the command to the server."""

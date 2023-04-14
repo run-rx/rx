@@ -1,9 +1,9 @@
+import sys
 from typing import List
 
 from absl import logging
 import grpc
 
-from rx.client import grpc_helper
 from rx.client import login
 from rx.client import output_handler
 from rx.client import rsync
@@ -20,11 +20,13 @@ _NOT_REACHABLE = 1
 class Client():
   """Handle contacting the remote server."""
 
-  def __init__(self, local_cfg: local.LocalConfig):
-    remote_cfg = remote.Remote(local_cfg.cwd)
-    self._rsync = rsync.RsyncClient(local_cfg.cwd, remote_cfg)
+  def __init__(
+      self,
+      channel: grpc.Channel,
+      local_cfg: local.LocalConfig,
+      remote_cfg: remote.Remote):
     self._uri = remote_cfg['grpc_addr']
-    channel = grpc_helper.get_channel(self._uri)
+    self._rsync = rsync.RsyncClient(local_cfg.cwd, remote_cfg)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     self._metadata = local.get_grpc_metadata()
     self._local_cfg = local_cfg
@@ -53,13 +55,13 @@ class Client():
       for response in self._stub.Exec(request, metadata=self._metadata):
         out_handler.handle(response)
     except grpc.RpcError as e:
-      logging.error(f'Error contacting {self._uri}: {e.details()}')
+      sys.stderr.write(f'Error contacting {self._uri}: {e.details()}\n')
       return _NOT_REACHABLE
 
     out_handler.write_outputs(self._rsync)
 
     if (response is not None and response.HasField('result') and
         response.result.code != 0):
-      logging.error(response.result.message)
+      sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
     return 0
