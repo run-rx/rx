@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package rx;
+import 'google/protobuf/empty.proto';
 
-message EmptyMessage {}
+package rx;
 
 message Remote {
   message Image {
@@ -110,7 +110,7 @@ service ExecutionService {
 }
 
 service SetupService {
-  rpc GetUser(EmptyMessage) returns (GetUserResponse) {}
+  rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}
 }
