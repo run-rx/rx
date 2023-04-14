@@ -49,7 +49,8 @@ class ExecCommand:
 
 
 def main(argv):
-  logging.get_absl_handler().python_handler.use_absl_log_file()
+  logging.get_absl_handler().python_handler.use_absl_log_file(
+    program_name='rx', log_dir=tempfile.gettempdir())
   if len(argv) == 1:
     app.usage(shorthelp=True)
     return -1
