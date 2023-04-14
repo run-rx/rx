@@ -37,8 +37,7 @@ class RsyncClient:
 
   @property
   def _upload_path(self) -> pathlib.Path:
-    return (
-      pathlib.Path(self._cfg['daemon_module']) / self.workspace_id)
+    return pathlib.Path(self._cfg['daemon_module'])
 
   def from_remote(self, source: str, dest: pathlib.Path) -> int:
     """Copies output files from the remote machine to dest."""
