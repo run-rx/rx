@@ -13,15 +13,16 @@ class InitCommand:
   """Initialize (or reinitialize) the remote."""
 
   def __init__(self):
-    self._config = local.find_local_config(pathlib.Path.cwd())
+    self._cwd = pathlib.Path.cwd()
+    self._config = local.find_local_config(self._cwd)
 
   def run(self) -> int:
     if self._config is None:
-      local.install_local_files(pathlib.Path.cwd())
-      self._config = local.create_local_config()
+      local.install_local_files(self._cwd)
     else:
       logging.info('Workspace already exists, resetting it.')
     try:
+      self._config = local.create_local_config(self._cwd)
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = init_client.Client(ch, self._config)
         client.create_user_or_log_in()

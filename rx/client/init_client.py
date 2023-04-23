@@ -45,8 +45,10 @@ class Client():
     return user.User(self._local_cfg.cwd, email)
 
   def init(self) -> int:
-    # TODO: support GPUs.
-    target_env = self._local_cfg.get_target_env()
+    try:
+      target_env = self._local_cfg.get_target_env()
+    except local.ConfigError as e:
+      raise InitError(str(e), -1)
     if target_env.alloc.hardware.processor == 'gpu':
       print('rx only works with CPUs at the moment, but I appreciate your '
             'enthusiasm! Try setting --remote=python-cpu for now.')

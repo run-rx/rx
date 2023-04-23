@@ -90,17 +90,19 @@ class LocalConfig(config_base.ReadOnlyConfig):
     except json.JSONDecodeError as e:
       logging.exception(f'Could not parse {self["remote"]}')
       raise e
+    env = rx_pb2.Environment(alloc=rx_pb2.Remote())
+    if 'image' not in remote_config or 'docker' not in remote_config['image']:
+      raise ConfigError(
+        f'Remote config {self["remote"]} must contain "image": '
+        '{"docker": "<docker image>"}')
     docker_image = remote_config['image']['docker']
-    env = rx_pb2.Environment(
-      alloc=rx_pb2.Remote(
-        image=rx_pb2.Remote.Image(
-          docker=docker_image,
-        ),
-        hardware=rx_pb2.Remote.Hardware(
-          processor=remote_config['hardware']['processor'],
-        ),
-      ),
-    )
+    env.alloc.image.CopyFrom(rx_pb2.Remote.Image(
+      docker=docker_image,
+    ))
+    if 'hardware' in remote_config and 'processor' in remote_config['hardware']:
+      env.alloc.hardware.CopyFrom(rx_pb2.Remote.Hardware(
+        processor=remote_config['hardware']['processor']
+      ))
     env.MergeFrom(self._get_source_env(docker_image))
     return env
 
@@ -110,9 +112,8 @@ class LocalConfig(config_base.ReadOnlyConfig):
     return f'{fg}{s}{sty.rs.fg}'
 
 
-def create_local_config() -> LocalConfig:
+def create_local_config(cwd: pathlib.Path) -> LocalConfig:
   """Gets or creates .rx directory."""
-  cwd = pathlib.Path.cwd()
   config_dir = (cwd / _get_local_config_file()).parent
   config_dir.mkdir(exist_ok=True, parents=True)
   with LocalConfigWriter(cwd) as c:
@@ -194,3 +195,7 @@ def _install_file(install_dir, config_dir, base_name):
   destination_path = config_dir / base_name
   if not destination_path.exists():
     shutil.copy(source_path, destination_path)
+
+
+class ConfigError(RuntimeError):
+  pass
