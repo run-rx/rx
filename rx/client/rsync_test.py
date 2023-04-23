@@ -18,7 +18,7 @@ class RsyncTests(unittest.TestCase):
     FLAGS(sys.argv)
     self._cwd = pathlib.Path('/path/to/proj')
     self._remote_cfg = {
-      'daemon_module': 'rx-test',
+      'daemon_module': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
       'worker_addr': 'abc123.trex.run-rx.com',
       'workspace_id': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
     }
@@ -37,7 +37,7 @@ class RsyncTests(unittest.TestCase):
       '--compress',
       '--delete',
       '--exclude-from=/path/to/proj/.rxignore',
-      'abc123.trex.run-rx.com::rx-test/f1d1df3b-e046-4e88-822e-72596e5020c5/rx-out/',
+      'abc123.trex.run-rx.com::f1d1df3b-e046-4e88-822e-72596e5020c5/rx-out/',
       'rx-out',
     ])
 
@@ -57,7 +57,7 @@ class RsyncTests(unittest.TestCase):
       '--inplace',
       '--exclude-from=/path/to/proj/.rxignore',
       '/path/to/proj/',
-      'abc123.trex.run-rx.com::rx-test/f1d1df3b-e046-4e88-822e-72596e5020c5',
+      'abc123.trex.run-rx.com::f1d1df3b-e046-4e88-822e-72596e5020c5',
     ])
 
 
