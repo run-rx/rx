@@ -4,14 +4,15 @@
 set -eux
 
 VERSION="$1"
+PLATFORM="$2"
 
-pyinstaller --onefile rx.spec
+ZIP_DIR="${TMPDIR}/rx-${VERSION}"
+ZIP_FILE="rx-${VERSION}-${PLATFORM}.zip"
 
-ZIP_DIR="${TMPDIR}/rx"
 mkdir -p "${ZIP_DIR}"
-cp package/README.md LICENSE.txt dist/rx/rx "${ZIP_DIR}"
+cp package/README.md LICENSE.txt dist/rx "${ZIP_DIR}"
 cd "${TMPDIR}"
-zip "rx-${VERSION}.zip" rx
+zip "${ZIP_FILE}" "${ZIP_DIR}"
 cd -
 
-echo "Created ${TMPDIR}/rx-${VERSION}.zip"
+echo "Created ${TMPDIR}/${ZIP_FILE}"
