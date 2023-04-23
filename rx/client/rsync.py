@@ -78,12 +78,15 @@ class RsyncClient:
 def _run_rsync(cmd: list[str]) -> int:
   logging.debug('Running %s', cmd)
   try:
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, check=True, capture_output=True)
   except subprocess.CalledProcessError as e:
     logging.error('Error running `%s`', ' '.join(e.cmd))
     if e.returncode == 10:
-      logging.error('Is the daemon running?')
+      # Worker was unreachable.
+      logging.error('stderr: %s', e.stderr)
     return e.returncode
+  if result.stdout:
+    print(result.stdout)
   return 0
 
 

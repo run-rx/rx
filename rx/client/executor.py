@@ -41,6 +41,7 @@ class Client():
 
     result = self._rsync.to_remote()
     if result != 0:
+      print('Worker was unrechable, run `rx init` to get a new instance.')
       return result
     result = None
 
