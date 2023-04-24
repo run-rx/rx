@@ -96,6 +96,11 @@ message InstallDepsResponse {
   bytes stdout = 2;
 }
 
+message KillRequest {
+  string workspace_id = 1;
+  string execution_id = 2;
+}
+
 message SetUsernameRequest {
   string username = 1;
 }
@@ -107,6 +112,7 @@ message SetUsernameResponse {
 service ExecutionService {
   rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(ExecRequest) returns (stream ExecResponse) {}
+  rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
 }
 
 service SetupService {

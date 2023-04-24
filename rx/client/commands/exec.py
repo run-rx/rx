@@ -50,7 +50,11 @@ class ExecCommand:
       # must be quoted so that absl doesn't try to capture the -l.
       # TODO: is there a better way to handle this with absl flags?
       self._argv = self._argv[0].split(' ')
-    return client.exec(self._argv)
+    try:
+      return client.exec(self._argv)
+    except KeyboardInterrupt:
+      client.maybe_kill()
+      return executor.SIGINT_CODE
 
 
 def main(argv):
@@ -59,17 +63,20 @@ def main(argv):
   if len(argv) == 1:
     app.usage(shorthelp=True)
     return -1
-  cmd_to_run = argv[1]
-  if cmd_to_run == 'init':
-    cmd = init.InitCommand()
-  else:
-    if cmd_to_run == 'run':
-      # "rx run foo" is generally the same as "rx foo", but the extra "run" can
-      # be handy when running a script called "init", say, on the remote
-      # machine.
-      argv = argv[1:]
-    cmd = ExecCommand(argv[1:])
-  return cmd.run()
+  try:
+    cmd_to_run = argv[1]
+    if cmd_to_run == 'init':
+      cmd = init.InitCommand()
+    else:
+      if cmd_to_run == 'run':
+        # "rx run foo" is generally the same as "rx foo", but the extra "run" can
+        # be handy when running a script called "init", say, on the remote
+        # machine.
+        argv = argv[1:]
+      cmd = ExecCommand(argv[1:])
+    return cmd.run()
+  except KeyboardInterrupt:
+    return executor.SIGINT_CODE
 
 
 if __name__ == '__main__':
