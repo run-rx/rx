@@ -42,8 +42,6 @@ class RsyncClient:
   def from_remote(self, source: str, dest: pathlib.Path) -> int:
     """Copies output files from the remote machine to dest."""
     assert dest.is_dir(), f'Destination {dest} must be a directory'
-    # The ancient version of rsync that comes on Mac doesn't allow syncing
-    # multiple paths, so just do one at a time.
     remote_path = self._upload_path / source
     daemon = f'{self._daemon_addr}::{remote_path}/'
     cmd = [
@@ -51,13 +49,11 @@ class RsyncClient:
         '--archive',
         '--compress',
         '--delete',
+        '--quiet',
         f'--exclude-from={self._sync_dir / local.IGNORE}',
         daemon,
         str(dest)]
-    exit_code = _run_rsync(cmd)
-    if exit_code != 0:
-      return exit_code
-    return 0
+    return _run_rsync(cmd)
 
   def to_remote(self) -> int:
     """Copies files/dirs to remote."""
@@ -76,7 +72,7 @@ class RsyncClient:
 
 
 def _run_rsync(cmd: list[str]) -> int:
-  logging.debug('Running %s', cmd)
+  logging.info('Running %s', cmd)
   try:
     result = subprocess.run(cmd, check=True, capture_output=True)
   except subprocess.CalledProcessError as e:
@@ -84,9 +80,11 @@ def _run_rsync(cmd: list[str]) -> int:
     if e.returncode == 10:
       # Worker was unreachable.
       logging.error('stderr: %s', e.stderr)
+    if e.returncode is None:
+      return -1
     return e.returncode
   if result.stdout:
-    print(result.stdout)
+    print(f'stdout: {result.stdout}')
   return 0
 
 
