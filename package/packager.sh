@@ -6,13 +6,19 @@ set -eux
 VERSION="$1"
 PLATFORM="$2"
 
-ZIP_DIR="${TMPDIR}/rx-${VERSION}"
+ZIP_BASENAME="rx-${VERSION}"
+ZIP_DIR="${TMPDIR}/${ZIP_BASENAME}"
 ZIP_FILE="rx-${VERSION}-${PLATFORM}.zip"
 
+# Copy files to a working dir.
 mkdir -p "${ZIP_DIR}"
-cp package/README.md LICENSE.txt dist/rx "${ZIP_DIR}"
+cp package/README.md LICENSE.txt rx-out/dist/rx "${ZIP_DIR}"
+
 cd "${TMPDIR}"
-zip "${ZIP_FILE}" "${ZIP_DIR}"
+# Clean up if there's an old version around.
+rm -f "${ZIP_FILE}"
+zip -r "${ZIP_FILE}" "rx-${VERSION}"
 cd -
 
-echo "Created ${TMPDIR}/${ZIP_FILE}"
+cp ${TMPDIR}/${ZIP_FILE} rx-out/
+echo "Created rx-out/${ZIP_FILE}"

@@ -64,7 +64,6 @@ class Client():
       sys.stderr.write(f'Error contacting {self._uri}: {e.details()}\n')
       return _NOT_REACHABLE
     except KeyboardInterrupt:
-      print('in executor')
       self.maybe_kill()
       return SIGINT_CODE
 
