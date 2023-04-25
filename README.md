@@ -24,13 +24,11 @@ rx ls
 rx ./scripts/my_script.sh
 ```
 
+Check out the [getting-started](https://github.com/run-rx/getting-started) repository for more examples.
+
 ## Feedback
 
-Please file an [issue](https://github.com/run-rx/rx/issues)!
-
-# Contributing
-
-Contributions are welcome!
+Please file an [issue](https://github.com/run-rx/rx/issues).
 
 ## Testing
 
