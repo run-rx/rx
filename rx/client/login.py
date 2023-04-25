@@ -147,7 +147,16 @@ class LoginManager:
       cmd = ['cmd', '/c', 'start', url.replace('&', '^&')]
     else:
       raise RuntimeError(f'Unsupported system: {system}')
-    subprocess.run(cmd, check=True)
+    try:
+      subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+      if e.stdout:
+        print(e.stdout)
+      raise AuthError(f'Error opening browser: {e}')
+    except FileNotFoundError as e:
+      raise AuthError(
+        f'Could not find browser-opening program {cmd[0]}, are you in an SSH '
+        'session?')
 
   def refresh_access_token(self):
     """Refreshes the access token when it expires."""
