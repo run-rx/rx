@@ -66,6 +66,15 @@ class Client():
     except KeyboardInterrupt:
       self.maybe_kill()
       return SIGINT_CODE
+    except RuntimeError as e:
+      # Bug in grpc, probably.
+      msg = str(e)
+      if msg == 'cannot release un-acquired lock':
+        self.maybe_kill()
+        return SIGINT_CODE
+      else:
+        sys.stderr.write(msg)
+        return -1
 
     out_handler.write_outputs(self._rsync)
 
