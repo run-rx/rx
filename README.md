@@ -4,7 +4,7 @@ Remote execution made easy.
 
 ## Installation
 
-[Download](https://github.com/run-rx/rx/downloads) the latest release.
+[Download](https://github.com/run-rx/rx/releases/latest) the latest release.
 Decompress it and move the `rx` binary onto your path, e.g.,
 
     tar zxvf rx-0.0.1-nix.tar.gz
