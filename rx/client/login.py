@@ -25,7 +25,7 @@ import platform
 import subprocess
 import threading
 import time
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 from urllib import parse
 
 from absl import app
@@ -103,7 +103,7 @@ class LoginManager:
     return (('id-token', self._access_token['id_token']),)
 
   @property
-  def id_token(self) -> dict[str, str]:
+  def id_token(self) -> Dict[str, str]:
     """Returns the decoded ID token."""
     return decode_id_token(self._access_token['id_token'])
 
@@ -260,14 +260,14 @@ def _delete_auth_files():
     _get_access_token_file().unlink()
 
 
-def is_expired(id_token: dict[str, Any]) -> bool:
+def is_expired(id_token: Dict[str, Any]) -> bool:
   """Returns if the access token is expired."""
   exp = id_token['exp']
   now = time.time()
   return now > exp
 
 
-def decode_id_token(b64: str) -> dict[str, Any]:
+def decode_id_token(b64: str) -> Dict[str, Any]:
   """The id_token field is a base64 encoded, .-delimited string."""
   return jwt.decode(b64, options={'verify_signature': False})
 
@@ -280,7 +280,7 @@ def _get_refresh_token_file() -> pathlib.Path:
   return config_base.get_config_dir() / 'user/.refresh-token'
 
 
-def _no_auth_login() -> dict[str, Any]:
+def _no_auth_login() -> Dict[str, Any]:
   """Returns an auth token with email: foo@example.com."""
   assert not _DO_AUTH.value and _AUTH_EMAIL.value is not None
   id_token = jwt.encode({'email': _AUTH_EMAIL.value}, 'abc123')

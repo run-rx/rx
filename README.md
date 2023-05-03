@@ -42,7 +42,7 @@ and if you're on an old or strange system, they will probably fail.
 
 If you cannot use the pre-built binaries, the source prerequisites are:
 
-* Python 3.11.2+
+* Python 3.7.2+ ([Download](https://www.python.org/downloads/))
 * Rsync 3.2.7 ([Install instructions](https://github.com/WayneD/rsync/blob/master/INSTALL.md))
 * Project dependencies (`pip install -r requirements.txt`)
 

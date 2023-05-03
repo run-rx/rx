@@ -1,6 +1,7 @@
 from collections import abc
 import pathlib
 import subprocess
+from typing import List
 
 from absl import app
 from absl import flags
@@ -71,7 +72,7 @@ class RsyncClient:
     return _run_rsync(cmd)
 
 
-def _run_rsync(cmd: list[str]) -> int:
+def _run_rsync(cmd: List[str]) -> int:
   logging.info('Running %s', cmd)
   try:
     result = subprocess.run(cmd, check=True, capture_output=True)

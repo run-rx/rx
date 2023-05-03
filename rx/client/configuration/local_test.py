@@ -2,7 +2,7 @@ import json
 import pathlib
 import shutil
 import tempfile
-from typing import Any
+from typing import Any, Dict
 import unittest
 
 from absl.testing import absltest
@@ -72,7 +72,7 @@ class LocalTests(unittest.TestCase):
     )
     self.assertEqual(got, expected)
 
-  def _create_remote(self, cfg: dict[str, Any], remote_name: str = 'test'):
+  def _create_remote(self, cfg: Dict[str, Any], remote_name: str = 'test'):
     remote_dir = self._rxroot / local._REMOTE_DIR
     remote_dir.mkdir(exist_ok=True, parents=True)
     remote_config_file = remote_dir / remote_name

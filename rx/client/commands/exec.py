@@ -13,6 +13,7 @@ To run a command on a configured remote host:
 """
 import pathlib
 import tempfile
+from typing import List
 
 from absl import app
 from absl import logging
@@ -26,7 +27,7 @@ from rx.client.configuration import remote
 
 class ExecCommand:
 
-  def __init__(self, argv: list[str]):
+  def __init__(self, argv: List[str]):
     self._argv = argv
     self._config = local.find_local_config(pathlib.Path.cwd())
 

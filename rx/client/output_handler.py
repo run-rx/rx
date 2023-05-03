@@ -1,6 +1,7 @@
 """Handle outputs from the server."""
 import pathlib
 import sys
+from typing import List
 
 from rx.client import rsync
 from rx.proto import rx_pb2
@@ -13,7 +14,7 @@ class OutputHandler:
     self._current_outputs = set()
 
   @property
-  def remote_paths(self) -> list[str]:
+  def remote_paths(self) -> List[str]:
     return sorted([f'{o}' for o in self._current_outputs])
 
   def handle(self, resp: rx_pb2.ExecResponse):
