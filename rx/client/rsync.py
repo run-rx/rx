@@ -3,7 +3,6 @@ import pathlib
 import subprocess
 from typing import List
 
-from absl import app
 from absl import flags
 from absl import logging
 
@@ -20,9 +19,7 @@ class RsyncClient:
       self, sync_dir: pathlib.Path, remote_cfg: abc.Mapping):
     self._sync_dir = sync_dir
     self._cfg = remote_cfg
-    self._rsync_path = (
-      _RSYNC_PATH.value if _RSYNC_PATH.value else
-      str(local.get_bundle_path() / 'bin/rsync'))
+    self._rsync_path = _get_rsync_path()
     self._daemon_addr = self._cfg["worker_addr"]
     if config_base.is_local():
       # Remove the port (rsync isn't listening on 50051).
@@ -89,12 +86,12 @@ def _run_rsync(cmd: List[str]) -> int:
   return 0
 
 
-def main(argv):
-  del argv
-  rc = RsyncClient(
-    pathlib.Path.cwd(),
-    config_base.ReadOnlyConfig(pathlib.Path.cwd() / '.rx' / 'remote'))
+def _get_rsync_path() -> str:
+  if _RSYNC_PATH.value:
+    return _RSYNC_PATH.value
 
+  if local.is_bundled():
+    return str(local.get_bundle_path() / 'bin/rsync')
 
-if __name__ == '__main__':
-  app.run(main)
+  # Otherwise, use whatever's on the path.
+  return 'rsync'

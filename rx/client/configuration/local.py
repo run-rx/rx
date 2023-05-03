@@ -133,7 +133,7 @@ def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
 
 def get_bundle_path() -> pathlib.Path:
   """Gets the path bundled client files can be found on."""
-  if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+  if is_bundled():
     return pathlib.Path(sys._MEIPASS)
   else:
     # We are running in a normal Python environment.
@@ -170,6 +170,11 @@ def install_local_files(cwd: pathlib.Path):
     return
   # .rx/remote/default -> python-cpu
   default_config.symlink_to('python-cpu')
+
+
+def is_bundled() -> bool:
+  """If this is bundled rx (vs. running from source)."""
+  return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
 
 
 def _find_project_name(start_dir: pathlib.Path) -> str:
