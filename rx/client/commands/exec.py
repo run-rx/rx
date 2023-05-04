@@ -80,5 +80,5 @@ def main(argv):
     return executor.SIGINT_CODE
 
 
-if __name__ == '__main__':
+def run():
   app.run(main)

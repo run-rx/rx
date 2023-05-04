@@ -4,11 +4,21 @@ Remote execution made easy.
 
 ## Installation
 
-[Download](https://github.com/run-rx/rx/releases/latest) the latest release.
-Decompress it and move the `rx` binary onto your path, e.g.,
+Install the latest release from pip:
 
-    tar zxvf rx-0.0.1-nix.tar.gz
-    mv rx-0.0.1/rx /usr/local/bin/rx
+    pip install rx
+
+rx uses rsync for downloads, so make sure rsync is installed on your
+system:
+
+    which rsync
+
+If it isn't, install it with your favorite package manager:
+
+    brew install rsync
+    yum install rsync
+    apt-get install rsync
+    # ...you get the idea
 
 ## Use
 
@@ -33,41 +43,6 @@ Check out the [getting-started](https://github.com/run-rx/getting-started) repos
 ## Feedback
 
 Please file an [issue](https://github.com/run-rx/rx/issues).
-
-## Running from source
-
-If possible, use the self-contained binaries that are provided for Linux, OS X
-(Intel), and OS X (Apple silicon). These binaries are pretty fragile, though,
-and if you're on an old or strange system, they will probably fail.
-
-If you cannot use the pre-built binaries, the source prerequisites are:
-
-* Python 3.7.2+ ([Download](https://www.python.org/downloads/))
-* Rsync 3.2.7 ([Install instructions](https://github.com/WayneD/rsync/blob/master/INSTALL.md))
-* Project dependencies (`pip install -r requirements.txt`)
-
-### Running directly
-
-`rx`'s entry point is _rx/client/commands/exec.py_. You can
-run this directly, so instead of `rx <command>` it's `python -m rx.client.commands.exec --rsync_path=/path/to/rsync-3.2.7 <command>`.
-
-For example, to run `rx init`, use:
-
-    python -m rx.client.commands.exec --rsync_path=/path/to/rsync-3.2.7 init
-
-### Building an executable
-
-To create the self-contained binary for `rx`, install all of the prereqs and
-run:
-
-    pyinstaller rx/client/commands/exec.py \
-        --add-binary /path/to/rsync:bin \
-        --add-data install:install \
-        --paths=. \
-        --name rx \
-        --onefile
-
-This creates `dist/rx`, which can then be copied to your PATH and used normally.
 
 ## Testing
 
