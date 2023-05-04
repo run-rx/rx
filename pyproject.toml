@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "rx"
+name = "run-rx"
 version = "0.0.1"
 description = "A tool to simplify remote execution"
 authors = ["Kris Chodorow <k.chodorow@gmail.com>"]
@@ -7,6 +7,9 @@ license = "LICENSE.txt"
 readme = "README.md"
 homepage = "https://www.run-rx.com"
 repository = "https://github.com/run-rx/rx"
+packages = [
+    { include = "rx" },
+]
 include = [
   "rx/proto/*.py",
   "rx/proto/*.pyi",
