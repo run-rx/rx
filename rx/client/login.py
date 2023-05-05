@@ -152,8 +152,10 @@ class LoginManager:
     except subprocess.CalledProcessError as e:
       if e.stdout:
         print(e.stdout)
+      self._server.shutdown()
       raise AuthError(f'Error opening browser: {e}')
     except FileNotFoundError as e:
+      self._server.shutdown()
       raise AuthError(
         f'Could not find browser-opening program {cmd[0]}, are you in an SSH '
         'session?')
