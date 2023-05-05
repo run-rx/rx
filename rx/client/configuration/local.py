@@ -3,6 +3,7 @@ import hashlib
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 from typing import Optional, Tuple
 import uuid
@@ -21,6 +22,7 @@ IGNORE = pathlib.Path('.rxignore')
 _REMOTE = flags.DEFINE_string(
   'remote', 'default',
   'The remote configuration file to use (see .rx/README.md).')
+_RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
 
 _REMOTE_DIR = config_base.RX_DIR / 'remotes'
 
@@ -119,6 +121,7 @@ def create_local_config(cwd: pathlib.Path) -> LocalConfig:
   with LocalConfigWriter(cwd) as c:
     c.setup_remote()
     c['project_name'] = _find_project_name(cwd)
+    c['rsync_path'] = _get_rsync_path()
   return LocalConfig(cwd)
 
 
@@ -131,14 +134,10 @@ def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
   return None
 
 
-def get_bundle_path() -> pathlib.Path:
+def get_source_path() -> pathlib.Path:
   """Gets the path bundled client files can be found on."""
-  if is_bundled():
-    return pathlib.Path(sys._MEIPASS)
-  else:
-    # We are running in a normal Python environment.
-    # __file__ is ./rx/client/configuration/local.py, so this resolves to ./.
-    return pathlib.Path(__file__).resolve().parent.parent.parent.parent
+  # __file__ is ./rx/client/configuration/local.py, so this resolves to ./.
+  return pathlib.Path(__file__).resolve().parent.parent.parent.parent
 
 
 def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
@@ -149,7 +148,7 @@ def install_local_files(cwd: pathlib.Path):
   # Output directory.
   (cwd / 'rx-out').mkdir(exist_ok=True)
 
-  install_dir = pathlib.Path(get_bundle_path() / 'install')
+  install_dir = pathlib.Path(get_source_path() / 'install')
 
   _install_file(install_dir, cwd, IGNORE)
 
@@ -172,9 +171,18 @@ def install_local_files(cwd: pathlib.Path):
   default_config.symlink_to('python-cpu')
 
 
-def is_bundled() -> bool:
-  """If this is bundled rx (vs. running from source)."""
-  return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+def _get_rsync_path() -> str:
+  """Make sure rsync is installed."""
+  if _RSYNC_PATH.value:
+    return _RSYNC_PATH.value
+  try:
+    result = subprocess.run(
+      ['which', 'rsync'], check=True, capture_output=True)
+  except subprocess.CalledProcessError as e:
+    logging.error('Error finding rsync: %s', e)
+    raise ConfigError('Cannot find rsync, is it installed/on your path?')
+  # Use rsync on PATH
+  return result.stdout.decode('utf-8').strip('\n')
 
 
 def _find_project_name(start_dir: pathlib.Path) -> str:

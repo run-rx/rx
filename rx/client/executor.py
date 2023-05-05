@@ -28,7 +28,7 @@ class Client():
       local_cfg: local.LocalConfig,
       remote_cfg: remote.Remote):
     self._uri = remote_cfg['grpc_addr']
-    self._rsync = rsync.RsyncClient(local_cfg.cwd, remote_cfg)
+    self._rsync = rsync.RsyncClient(local_cfg, remote_cfg)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     self._metadata = local.get_grpc_metadata()
     self._local_cfg = local_cfg

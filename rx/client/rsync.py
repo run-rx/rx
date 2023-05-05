@@ -3,23 +3,20 @@ import pathlib
 import subprocess
 from typing import List
 
-from absl import flags
 from absl import logging
 
 from rx.client.configuration import config_base
 from rx.client.configuration import local
-
-_RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
 
 
 class RsyncClient:
   """Rsync tools."""
 
   def __init__(
-      self, sync_dir: pathlib.Path, remote_cfg: abc.Mapping):
-    self._sync_dir = sync_dir
+      self, local_cfg: local.LocalConfig, remote_cfg: abc.Mapping):
+    self._sync_dir = local_cfg.cwd
     self._cfg = remote_cfg
-    self._rsync_path = _get_rsync_path()
+    self._rsync_path = local_cfg['rsync_path']
     self._daemon_addr = self._cfg["worker_addr"]
     if config_base.is_local():
       # Remove the port (rsync isn't listening on 50051).
@@ -84,14 +81,3 @@ def _run_rsync(cmd: List[str]) -> int:
   if result.stdout:
     print(f'stdout: {result.stdout}')
   return 0
-
-
-def _get_rsync_path() -> str:
-  if _RSYNC_PATH.value:
-    return _RSYNC_PATH.value
-
-  if local.is_bundled():
-    return str(local.get_bundle_path() / 'bin/rsync')
-
-  # Otherwise, use whatever's on the path.
-  return 'rsync'

@@ -8,6 +8,7 @@ from absl.testing import absltest
 from absl.testing import flagsaver
 
 from rx.client import rsync
+from rx.client.configuration import local
 
 FLAGS = flags.FLAGS
 
@@ -17,6 +18,7 @@ class RsyncTests(unittest.TestCase):
     super().setUp()
     FLAGS(sys.argv)
     self._cwd = pathlib.Path('/path/to/proj')
+    self._local_cfg = local.LocalConfig(self._cwd)
     self._remote_cfg = {
       'daemon_module': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
       'worker_addr': 'abc123.trex.run-rx.com',
@@ -25,7 +27,7 @@ class RsyncTests(unittest.TestCase):
 
   @flagsaver.flagsaver(rsync_path='/path/to/rsync')
   def test_from_remote(self):
-    client = rsync.RsyncClient(self._cwd, self._remote_cfg)
+    client = rsync.RsyncClient(self._local_cfg, self._remote_cfg)
     rsync._run_rsync = mock.MagicMock(return_value=0)
 
     got = client.from_remote('rx-out', pathlib.Path('rx-out'))
@@ -43,7 +45,7 @@ class RsyncTests(unittest.TestCase):
 
   @flagsaver.flagsaver(rsync_path='/path/to/rsync')
   def test_to_remote(self):
-    client = rsync.RsyncClient(self._cwd, self._remote_cfg)
+    client = rsync.RsyncClient(self._local_cfg, self._remote_cfg)
     rsync._run_rsync = mock.MagicMock(return_value=0)
 
     got = client.to_remote()

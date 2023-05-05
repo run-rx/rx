@@ -115,7 +115,7 @@ class Client():
 
   def _run_initial_rsync(self):
     self._rsync = rsync.RsyncClient(
-      self._local_cfg.cwd, remote.Remote(self._local_cfg.cwd))
+      self._local_cfg, remote.Remote(self._local_cfg.cwd))
     return_code = self._rsync.to_remote()
     if return_code == 0:
       logging.info('Copied files to %s', self._rsync.host)
