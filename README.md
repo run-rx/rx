@@ -35,7 +35,7 @@ To execute commands on a remote machine, prefix them with `rx`:
 ```
 rx python foo.py
 rx ls
-rx ./scripts/my_script.sh
+rx 'echo $PATH > my-path'
 ```
 
 Check out the [getting-started](https://github.com/run-rx/getting-started) repository for more examples.
@@ -49,5 +49,6 @@ Please file an [issue](https://github.com/run-rx/rx/issues).
 To run tests, use:
 
 ```
+pip install -r test_requirements.txt
 PYTHONPATH=. pytest
 ```
