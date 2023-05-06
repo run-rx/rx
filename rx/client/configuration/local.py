@@ -66,9 +66,13 @@ class LocalConfig(config_base.ReadOnlyConfig):
 
   def __init__(self, working_dir: pathlib.Path):
     super().__init__(working_dir / _get_local_config_file())
-    self.cwd = working_dir
+    self._cwd = working_dir
     self.config_dir = self.cwd / config_base.RX_DIR
     self._color = None
+
+  @property
+  def cwd(self) -> pathlib.Path:
+    return self._cwd
 
   @property
   def rsync_source(self) -> rx_pb2.RsyncSource:

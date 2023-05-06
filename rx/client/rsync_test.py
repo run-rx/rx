@@ -5,12 +5,18 @@ from unittest import mock
 
 from absl import flags
 from absl.testing import absltest
-from absl.testing import flagsaver
 
 from rx.client import rsync
 from rx.client.configuration import local
 
 FLAGS = flags.FLAGS
+
+
+class MockLocalConfig(local.LocalConfig):
+  def __init__(self, config):
+    self._cwd = '/path/to/proj'
+    self._config = config
+
 
 class RsyncTests(unittest.TestCase):
 
@@ -18,14 +24,13 @@ class RsyncTests(unittest.TestCase):
     super().setUp()
     FLAGS(sys.argv)
     self._cwd = pathlib.Path('/path/to/proj')
-    self._local_cfg = local.LocalConfig(self._cwd)
+    self._local_cfg = MockLocalConfig({'rsync_path': '/usr/bin/rsync'})
     self._remote_cfg = {
       'daemon_module': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
       'worker_addr': 'abc123.trex.run-rx.com',
       'workspace_id': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
     }
 
-  @flagsaver.flagsaver(rsync_path='/path/to/rsync')
   def test_from_remote(self):
     client = rsync.RsyncClient(self._local_cfg, self._remote_cfg)
     rsync._run_rsync = mock.MagicMock(return_value=0)
@@ -34,16 +39,16 @@ class RsyncTests(unittest.TestCase):
 
     self.assertEqual(got, 0)
     rsync._run_rsync.assert_called_once_with([
-      '/path/to/rsync',
+      '/usr/bin/rsync',
       '--archive',
       '--compress',
       '--delete',
+      '--quiet',
       '--exclude-from=/path/to/proj/.rxignore',
       'abc123.trex.run-rx.com::f1d1df3b-e046-4e88-822e-72596e5020c5/rx-out/',
       'rx-out',
     ])
 
-  @flagsaver.flagsaver(rsync_path='/path/to/rsync')
   def test_to_remote(self):
     client = rsync.RsyncClient(self._local_cfg, self._remote_cfg)
     rsync._run_rsync = mock.MagicMock(return_value=0)
@@ -52,7 +57,7 @@ class RsyncTests(unittest.TestCase):
 
     self.assertEqual(got, 0)
     rsync._run_rsync.assert_called_once_with([
-      '/path/to/rsync',
+      '/usr/bin/rsync',
       '--archive',
       '--compress',
       '--delete',
