@@ -4,7 +4,6 @@ import json
 import pathlib
 import shutil
 import subprocess
-import sys
 from typing import Optional, Tuple
 import uuid
 
@@ -15,7 +14,7 @@ import sty
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-CLIENT_VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 IGNORE = pathlib.Path('.rxignore')
 
@@ -145,7 +144,7 @@ def get_source_path() -> pathlib.Path:
 
 
 def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
-  return (('cv', CLIENT_VERSION),)
+  return (('cv', VERSION),)
 
 
 def install_local_files(cwd: pathlib.Path):

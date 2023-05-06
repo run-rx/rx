@@ -58,16 +58,25 @@ class ExecCommand:
       return executor.SIGINT_CODE
 
 
+class VersionCommand:
+  """Prints the version."""
+
+  def run(self):
+    print(local.VERSION)
+
+
 def main(argv):
   logging.get_absl_handler().python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
   if len(argv) == 1:
     app.usage(shorthelp=True)
     return -1
+  cmd_to_run = argv[1]
   try:
-    cmd_to_run = argv[1]
     if cmd_to_run == 'init':
       cmd = init.InitCommand()
+    elif cmd_to_run == 'version':
+      cmd = VersionCommand()
     else:
       if cmd_to_run == 'run':
         # "rx run foo" is generally the same as "rx foo", but the extra "run" can
