@@ -6,7 +6,7 @@ Remote execution made easy.
 
 Install the latest release from pip:
 
-    pip install rx
+    pip install run-rx
 
 rx uses rsync for downloads, so make sure rsync is installed on your
 system:
