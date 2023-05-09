@@ -4,7 +4,6 @@
 __pycache__
 *.ipynb
 .rx
-.rxignore
 rx-out
 rx/proto/rx_pb2*
 *.log

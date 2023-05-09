@@ -1,0 +1,24 @@
+# This file specifies which local files and directories should not be uploaded.
+# It is in rsync's ignore format.
+
+# rx-specific
+.rx
+rx-out/
+
+# Git
+.git
+
+# Python
+*.pyc
+__pycache__
+# Common virtual environment names
+env/
+venv/
+.env/
+.venv/
+# Install dirs
+build/
+dist/
+
+# Jupyter
+.ipynb_checkpoints
