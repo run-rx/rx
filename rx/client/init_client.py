@@ -21,7 +21,7 @@ class Client():
   def __init__(self, channel: grpc.Channel, local_cfg: local.LocalConfig):
     self._stub = rx_pb2_grpc.SetupServiceStub(channel)
     self._local_cfg = local_cfg
-    self._login = login.LoginManager()
+    self._login = login.LoginManager(local_cfg.cwd)
     self._metadata = local.get_grpc_metadata()
 
   def create_user_or_log_in(self) -> user.User:

@@ -21,6 +21,7 @@ from absl import logging
 from rx.client import executor
 from rx.client import grpc_helper
 from rx.client.commands import init
+from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
 
@@ -29,7 +30,10 @@ class ExecCommand:
 
   def __init__(self, argv: List[str]):
     self._argv = argv
-    self._config = local.find_local_config(pathlib.Path.cwd())
+    cwd = (
+      pathlib.Path(config_base.RX_ROOT.value) if config_base.RX_ROOT.value else
+      pathlib.Path.cwd())
+    self._config = local.find_local_config(cwd)
 
   def run(self) -> int:
     if self._config is None:
@@ -79,8 +83,8 @@ def main(argv):
       cmd = VersionCommand()
     else:
       if cmd_to_run == 'run':
-        # "rx run foo" is generally the same as "rx foo", but the extra "run" can
-        # be handy when running a script called "init", say, on the remote
+        # "rx run foo" is generally the same as "rx foo", but the extra "run"
+        # can be handy when running a script called "init", say, on the remote
         # machine.
         argv = argv[1:]
       cmd = ExecCommand(argv[1:])

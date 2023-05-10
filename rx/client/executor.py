@@ -1,5 +1,5 @@
 import sys
-from typing import List
+from typing import List, cast
 
 from absl import logging
 import grpc
@@ -33,7 +33,7 @@ class Client():
     self._metadata = local.get_grpc_metadata()
     self._local_cfg = local_cfg
     self._remote_cfg = remote_cfg
-    self._login = login.LoginManager()
+    self._login = login.LoginManager(local_cfg.cwd)
     self._current_execution_id = None
 
   def exec(self, argv: List[str]) -> int:
@@ -54,13 +54,14 @@ class Client():
       argv=argv,
       rsync_source=self._local_cfg.rsync_source)
 
-    out_handler = output_handler.OutputHandler()
+    out_handler = output_handler.OutputHandler(self._local_cfg.cwd)
     response = None
     try:
       for response in self._stub.Exec(request, metadata=self._metadata):
         self._current_execution_id = response.execution_id
         out_handler.handle(response)
     except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
       sys.stderr.write(f'Error contacting {self._uri}: {e.details()}\n')
       return _NOT_REACHABLE
     except KeyboardInterrupt:

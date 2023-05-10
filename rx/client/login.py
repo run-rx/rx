@@ -28,7 +28,6 @@ import time
 from typing import Any, Dict, Tuple
 from urllib import parse
 
-from absl import app
 from absl import flags
 from absl import logging
 import jwt
@@ -88,12 +87,13 @@ class CodeHolder:
 class LoginManager:
   """Handle browser login."""
 
-  def __init__(self) -> None:
+  def __init__(self, rxroot: pathlib.Path) -> None:
+    self._rxroot = rxroot
     self._server = None
     self._port = 0
     self._code_holder = CodeHolder()
     self._access_token = config_base.ReadOnlyConfig(
-      _get_access_token_file(), strict_mode=False)
+      _get_access_token_file(rxroot), strict_mode=False)
     if not _DO_AUTH.value:
       self.login = _no_auth_login
 
@@ -120,7 +120,7 @@ class LoginManager:
       "id_token": "<base64-encoded 3-part string>",
     }
     """
-    user_dir = config_base.get_config_dir() / 'user'
+    user_dir = config_base.get_config_dir(self._rxroot) / 'user'
     if not user_dir.exists():
       user_dir.mkdir(parents=True, exist_ok=True)
     if not self._access_token:
@@ -162,11 +162,11 @@ class LoginManager:
 
   def refresh_access_token(self):
     """Refreshes the access token when it expires."""
-    refresh_file = _get_refresh_token_file()
+    refresh_file = _get_refresh_token_file(self._rxroot)
     if not refresh_file.exists():
       # Access token was expired but the refresh token doesn't exist. Just start
       # over.
-      _delete_auth_files()
+      _delete_auth_files(self._rxroot)
       raise AuthError('Could not log in, please try again.')
     with open(refresh_file, mode='rt', encoding='utf-8') as fh:
       refresh_token = json.load(fh)
@@ -184,11 +184,12 @@ class LoginManager:
         f'Unable to connect to oauth2.googleapis.com, is your internet up?')
     if resp.status_code != 200:
       # Refreshing went wrong, remove everything!
-      _delete_auth_files()
+      _delete_auth_files(self._rxroot)
       raise AuthError(
         f'Unable to refresh log in: {resp.reason} [{resp.status_code}]\n' +
         resp.text)
-    with _get_access_token_file().open(mode='wt', encoding='utf-8') as fh:
+    access_token = _get_access_token_file(self._rxroot)
+    with access_token.open(mode='wt', encoding='utf-8') as fh:
       fh.write(resp.text)
     self._access_token = json.loads(resp.text)
 
@@ -202,7 +203,7 @@ class LoginManager:
     try:
       id_token = decode_id_token(self._access_token['id_token'])
     except ValueError as e:
-      _delete_auth_files()
+      _delete_auth_files(self._rxroot)
       logging.exception(e)
       raise AuthError('Could not read token, please try logging in again.')
     if is_expired(id_token):
@@ -240,9 +241,11 @@ class LoginManager:
     if resp.status_code != 200:
       raise AuthError(
         f'Unable to log in: {resp.reason} [{resp.status_code}]\n{resp.text}')
-    with _get_access_token_file().open(mode='wt', encoding='utf-8') as fh:
+    access_token = _get_access_token_file(self._rxroot)
+    with access_token.open(mode='wt', encoding='utf-8') as fh:
       fh.write(resp.text)
-    with _get_refresh_token_file().open(mode='wt', encoding='utf-8') as fh:
+    refresh = _get_refresh_token_file(self._rxroot)
+    with refresh.open(mode='wt', encoding='utf-8') as fh:
       fh.write(resp.text)
     self._access_token = json.loads(resp.text)
 
@@ -254,12 +257,12 @@ class LoginManager:
     self._server.serve_forever()
 
 
-def _delete_auth_files():
+def _delete_auth_files(rxroot: pathlib.Path):
   """Remove all files associated with logging in."""
-  if _get_refresh_token_file().exists():
-    _get_refresh_token_file().unlink()
-  if _get_access_token_file().exists():
-    _get_access_token_file().unlink()
+  if _get_refresh_token_file(rxroot).exists():
+    _get_refresh_token_file(rxroot).unlink()
+  if _get_access_token_file(rxroot).exists():
+    _get_access_token_file(rxroot).unlink()
 
 
 def is_expired(id_token: Dict[str, Any]) -> bool:
@@ -274,12 +277,12 @@ def decode_id_token(b64: str) -> Dict[str, Any]:
   return jwt.decode(b64, options={'verify_signature': False})
 
 
-def _get_access_token_file() -> pathlib.Path:
-  return config_base.get_config_dir() / 'user/access-token'
+def _get_access_token_file(rxroot: pathlib.Path) -> pathlib.Path:
+  return config_base.get_config_dir(rxroot) / 'user/access-token'
 
 
-def _get_refresh_token_file() -> pathlib.Path:
-  return config_base.get_config_dir() / 'user/.refresh-token'
+def _get_refresh_token_file(rxroot: pathlib.Path) -> pathlib.Path:
+  return config_base.get_config_dir(rxroot) / 'user/.refresh-token'
 
 
 def _no_auth_login() -> Dict[str, Any]:
@@ -297,13 +300,3 @@ def _no_auth_login() -> Dict[str, Any]:
 
 class AuthError(RuntimeError):
   pass
-
-
-def main(argv):
-  del argv
-  mf = LoginManager()
-  mf.login()
-
-
-if __name__ == '__main__':
-  app.run(main)

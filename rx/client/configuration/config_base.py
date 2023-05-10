@@ -13,6 +13,8 @@ RX_DIR = pathlib.Path('.rx')
 # local/dev/prod).
 TREX_HOST = flags.DEFINE_string(
   'grpc_host', 'trex.run-rx.com', 'GRPC host to connect to.')
+RX_ROOT = flags.DEFINE_string(
+  'rxroot', None, 'The directory to use as rxroot (defaults to pwd)')
 
 
 class ReadOnlyConfig(abc.Mapping):
@@ -60,9 +62,9 @@ class ReadWriteConfig(abc.MutableMapping, ReadOnlyConfig):
     self._config.__delitem__(item)
 
 
-def get_config_dir() -> pathlib.Path:
-  """Returns the config directory path, e.g., .rx/localhost/config."""
-  return RX_DIR / TREX_HOST.value / 'config'
+def get_config_dir(rxroot: pathlib.Path) -> pathlib.Path:
+  """Returns the absolute config directory path, e.g., /proj/.rx/t.c/config."""
+  return rxroot / RX_DIR / TREX_HOST.value / 'config'
 
 
 def is_local() -> bool:

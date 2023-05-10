@@ -13,7 +13,9 @@ class InitCommand:
   """Initialize (or reinitialize) the remote."""
 
   def __init__(self):
-    self._cwd = pathlib.Path.cwd()
+    self._cwd = (
+      pathlib.Path(config_base.RX_ROOT.value) if config_base.RX_ROOT.value else
+      pathlib.Path.cwd())
     self._config = local.find_local_config(self._cwd)
 
   def run(self) -> int:

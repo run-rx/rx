@@ -37,6 +37,7 @@ class RsyncClient:
   def from_remote(self, source: str, dest: pathlib.Path) -> int:
     """Copies output files from the remote machine to dest."""
     assert dest.is_dir(), f'Destination {dest} must be a directory'
+    assert dest.is_absolute(), f'Destination {dest} must be absolute'
     remote_path = self._upload_path / source
     daemon = f'{self._daemon_addr}::{remote_path}/'
     cmd = [

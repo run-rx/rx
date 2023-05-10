@@ -31,7 +31,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
   the local machine."""
 
   def __init__(self, workspace_dir: pathlib.Path):
-    super().__init__(workspace_dir / _get_local_config_file())
+    super().__init__(_get_local_config_file(workspace_dir))
     self._workspace_dir = workspace_dir
 
   def setup_remote(self):
@@ -64,7 +64,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
   """Create the local configuration."""
 
   def __init__(self, working_dir: pathlib.Path):
-    super().__init__(working_dir / _get_local_config_file())
+    super().__init__(_get_local_config_file(working_dir))
     self._cwd = working_dir
     self.config_dir = self.cwd / config_base.RX_DIR
     self._color = None
@@ -119,7 +119,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
 
 def create_local_config(cwd: pathlib.Path) -> LocalConfig:
   """Gets or creates .rx directory."""
-  config_dir = (cwd / _get_local_config_file()).parent
+  config_dir = _get_local_config_file(cwd).parent
   config_dir.mkdir(exist_ok=True, parents=True)
   with LocalConfigWriter(cwd) as c:
     c.setup_remote()
@@ -130,9 +130,9 @@ def create_local_config(cwd: pathlib.Path) -> LocalConfig:
 
 def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
   """Factory to create a config by looking for .rx."""
-  cfg_path = working_dir / config_base.get_config_dir()
+  cfg_path = config_base.get_config_dir(working_dir)
   for parent in cfg_path.parents:
-    if (parent / config_base.get_config_dir()).exists():
+    if config_base.get_config_dir(parent).exists():
       return LocalConfig(parent)
   return None
 
@@ -200,9 +200,9 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
   return start_dir.name
 
 
-def _get_local_config_file() -> pathlib.Path:
+def _get_local_config_file(rxroot: pathlib.Path) -> pathlib.Path:
   """Return .rx/trex-dev.run-rx.com/config/local."""
-  return config_base.get_config_dir() / 'local'
+  return config_base.get_config_dir(rxroot) / 'local'
 
 
 def _install_file(install_dir, config_dir, base_name):

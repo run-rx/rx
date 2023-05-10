@@ -14,19 +14,19 @@ _VALID_USERNAME = re.compile(r'^[a-zA-Z][\w]{2,14}$')
 
 class CreateUser(config_base.ReadWriteConfig):
   def __init__(self, cwd: pathlib.Path):
-    super().__init__(cwd / _get_user_config())
+    super().__init__(_get_user_config(cwd))
 
 
 class User(config_base.ReadOnlyConfig):
   """User info."""
   def __init__(self, cwd: pathlib.Path, email: str):
-    super().__init__(cwd / _get_user_config())
+    super().__init__(_get_user_config(cwd))
     if email != self['email']:
       raise RuntimeError(f'Mismatched emails: {email} vs. {self["email"]}')
 
 
 def has_config(cwd: pathlib.Path) -> bool:
-  return (cwd / _get_user_config()).exists()
+  return _get_user_config(cwd).exists()
 
 
 def username_prompt(email: str) -> str:
@@ -49,5 +49,5 @@ def username_validator(username: Optional[str]) -> bool:
   return is_valid
 
 
-def _get_user_config() -> pathlib.Path:
-  return config_base.get_config_dir() / 'user/config'
+def _get_user_config(rxroot: pathlib.Path) -> pathlib.Path:
+  return rxroot / config_base.get_config_dir(rxroot) / 'user/config'

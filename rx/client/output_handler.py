@@ -10,7 +10,8 @@ from rx.proto import rx_pb2
 class OutputHandler:
   """Handle output files and stdout/err."""
 
-  def __init__(self) -> None:
+  def __init__(self, rxroot: pathlib.Path) -> None:
+    self._rxroot = rxroot
     self._current_outputs = set()
 
   @property
@@ -31,7 +32,7 @@ class OutputHandler:
   def write_outputs(self, rsync_client: rsync.RsyncClient):
     if not self._current_outputs:
       return
-    rsync_client.from_remote('rx-out', pathlib.Path('rx-out'))
+    rsync_client.from_remote('rx-out', self._rxroot / pathlib.Path('rx-out'))
     print('Created outputs:')
     for pth in self.remote_paths:
       print(f'  {pth}')
