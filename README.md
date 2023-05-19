@@ -1,48 +1,53 @@
 # rx
 
-Remote execution made easy.
+[rx](https://www.run-rx.com) is a command-line tool to help make remote
+execution easy.
+
+When you run rx it creates a private hosted environment in the cloud where all
+of your source code is automatically synced and any packages you need are
+installed. It automatically syncs output back to your machine and syncs local
+changes to your cloud instance.
+
+Right now rx is free to use, please give it a try and [let us know](mailto:eng@run-rx.com) what you think!
 
 ## Installation
 
-Install the latest release from pip:
+Install via pip:
 
     pip install run-rx
 
-rx uses rsync for downloads, so make sure rsync is installed on your
-system:
+rx also requires rsync to run, make sure you have it installed:
 
     which rsync
 
-If it isn't, install it with your favorite package manager:
+If not, check out [its website](https://rsync.samba.org/download.html) or your
+favorite package manager to install.
 
-    brew install rsync
-    yum install rsync
-    apt-get install rsync
-    # ...you get the idea
+## Usage
 
-## Use
+In the directory containing your project (often your git root), run:
 
-In you project's main directory, run:
+    rx init
 
-```
-rx init
-```
+This will prompt you to log in (or create an account) and allocate a machine
+in the cloud for you to use. Then it will copy your project from your local
+machine to the cloud instance and install any packages that your project needs.
 
-You only have to do this once per project (similar to `git init`).
+It may take several minutes to allocate a machine, copy your source code, and install packages (depending on your project).
 
-To execute commands on a remote machine, prefix them with `rx`:
+Once rx finishes initializing, you can run any command on your remote worker
+by prefixing it with "rx":
 
-```
-rx python foo.py
-rx ls
-rx 'echo $PATH > my-path'
-```
+    rx python my-script.py
+    rx ps ax
+    rx 'echo $PATH > my-path.txt'
 
 Check out the [getting-started](https://github.com/run-rx/getting-started) repository for more examples.
 
 ## Feedback
 
-Please file an [issue](https://github.com/run-rx/rx/issues).
+Feel free to [file an issue](https://github.com/run-rx/rx/issues) if you have
+any questions or problems!
 
 ## Testing
 
