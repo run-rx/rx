@@ -1,12 +1,16 @@
 import pathlib
 import sys
 
+from absl import flags
 from absl import logging
 
 from rx.client import grpc_helper
 from rx.client import init_client
 from rx.client.configuration import config_base
 from rx.client.configuration import local
+
+_DRY_RUN = flags.DEFINE_bool(
+  'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
 
 
 class InitCommand:
@@ -27,6 +31,9 @@ class InitCommand:
       self._config = local.create_local_config(self._cwd)
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = init_client.Client(ch, self._config)
+        if _DRY_RUN.value:
+          client.dry_run()
+          return 0
         client.create_user_or_log_in()
         return client.init()
     except init_client.InitError as e:

@@ -1,4 +1,5 @@
 import sys
+from typing import cast
 
 from absl import logging
 from google.protobuf import empty_pb2
@@ -44,6 +45,9 @@ class Client():
         c['email'] = email
     return user.User(self._local_cfg.cwd, email)
 
+  def dry_run(self):
+    rsync.dry_run(self._local_cfg)
+
   def init(self) -> int:
     try:
       target_env = self._local_cfg.get_target_env()
@@ -65,6 +69,7 @@ class Client():
       resp = self._stub.Init(req, metadata=self._metadata, timeout=(5 * 60))
       sys.stdout.write('Done.\n')
     except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
       raise InitError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       raise InitError(resp.result.message, -1)
@@ -110,15 +115,16 @@ class Client():
       resp = self._stub.GetUser(
         empty_pb2.Empty(), metadata=self._metadata, timeout=_TIMEOUT)
     except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
       raise InitError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
 
   def _run_initial_rsync(self):
-    self._rsync = rsync.RsyncClient(
+    r = rsync.RsyncClient(
       self._local_cfg, remote.Remote(self._local_cfg.cwd))
-    return_code = self._rsync.to_remote()
+    return_code = r.to_remote()
     if return_code == 0:
-      logging.info('Copied files to %s', self._rsync.host)
+      logging.info('Copied files to %s', r.host)
 
   def _install_deps(self, grpc_addr: str, workspace_id: str) -> int:
     channel = grpc_helper.get_channel(grpc_addr)
@@ -132,6 +138,7 @@ class Client():
           sys.stdout.buffer.write(resp.stdout)
           sys.stdout.buffer.flush()
     except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
       raise InitError(e.details(), -1)
     if resp and resp.HasField('result') and resp.result.code:
       raise InitError(resp.result.message, resp.result.code)

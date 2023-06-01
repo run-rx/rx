@@ -11,6 +11,8 @@ rx-out/
 # Python
 *.pyc
 __pycache__
+.pytest_cache
+
 # Common virtual environment names
 env/
 venv/

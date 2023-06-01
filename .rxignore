@@ -10,7 +10,9 @@ rx-out/
 
 # Python
 *.pyc
+.pytest_cache
 __pycache__
+
 # Common virtual environment names
 env/
 venv/
@@ -23,3 +25,5 @@ venv/
 # This project
 build
 dist
+
+.vscode
