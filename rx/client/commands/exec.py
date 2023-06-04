@@ -1,15 +1,16 @@
-"""Rx usage
+"""rx usage
 
-Configure this directory to be able to run on a remote host:
+To set up this directory on a remote host:
 
     rx init
 
 You only have to run this once per directory, similar to `git init`.
 
-To run a command on a configured remote host:
+To run a command on the remote host:
 
     rx CMD
 
+Run 'rx --help' for more options or visit https://www.run-rx.com.
 """
 import pathlib
 import tempfile
@@ -78,6 +79,7 @@ def main(argv):
   logging.get_absl_handler().python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
   if len(argv) == 1:
+    print('No command given.\n')
     app.usage(shorthelp=True)
     return -1
   cmd_to_run = argv[1]
