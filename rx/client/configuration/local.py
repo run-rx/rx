@@ -19,11 +19,12 @@ VERSION = '0.0.4'
 IGNORE = pathlib.Path('.rxignore')
 
 _REMOTE = flags.DEFINE_string(
-  'remote', 'default',
-  'The remote configuration file to use (see .rx/README.md).')
+  'remote', None,
+  'The path to the remote configuration file to use (see .rx/README.md).')
 _RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
 
 _REMOTE_DIR = config_base.RX_DIR / 'remotes'
+_DEFAULT_REMOTE = _REMOTE_DIR / 'default'
 
 
 class LocalConfigWriter(config_base.ReadWriteConfig):
@@ -36,8 +37,8 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
 
   def setup_remote(self):
     """Sets the "remote" field (and color) for the local config."""
-    remote = _REMOTE.value
-    remote_path = self._workspace_dir / _REMOTE_DIR / remote
+    remote = _REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE
+    remote_path = self._workspace_dir / remote
     try:
       with remote_path.open(mode='rt', encoding='utf-8') as fh:
         remote_content = fh.read()
@@ -88,7 +89,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
     return rx_pb2.Environment(python=rx_pb2.Python())
 
   def get_target_env(self) -> rx_pb2.Environment:
-    remote_file = self.cwd / _REMOTE_DIR / self['remote']
+    remote_file = self.cwd / self['remote']
     try:
       with remote_file.open(mode='rt', encoding='utf-8') as fh:
         remote_config = json.load(fh)
