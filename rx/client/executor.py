@@ -45,8 +45,7 @@ class Client():
 
     result = self._rsync.to_remote()
     if result != 0:
-      print('Worker was unrechable, run `rx init` to get a new instance.')
-      return result
+      raise UnreachableError(self._local_cfg["worker_addr"], result)
     result = None
 
     request = rx_pb2.ExecRequest(
@@ -96,3 +95,10 @@ class Client():
       execution_id=self._current_execution_id,
     )
     self._stub.Kill(req, metadata=self._metadata)
+
+
+class UnreachableError(RuntimeError):
+  def __init__(self, worker_addr: str, code: int, *args: object) -> None:
+    super().__init__(*args)
+    self.worker = worker_addr
+    self.code = code

@@ -60,6 +60,11 @@ class ExecCommand:
     except KeyboardInterrupt:
       client.maybe_kill()
       return executor.SIGINT_CODE
+    except executor.UnreachableError as e:
+      print(
+        f'Worker {e.worker} was unrechable, run `rx init` to get a new '
+        'instance.')
+      return e.code
 
 
 class VersionCommand:
