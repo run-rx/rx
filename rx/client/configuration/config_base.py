@@ -12,7 +12,7 @@ RX_DIR = pathlib.Path('.rx')
 # to make development easier, so we can have separate configs for
 # local/dev/prod).
 TREX_HOST = flags.DEFINE_string(
-  'grpc_host', 'trex.run-rx.com', 'GRPC host to connect to.')
+  'trex-host', 'trex.run-rx.com', 'GRPC host to connect to.')
 RX_ROOT = flags.DEFINE_string(
   'rxroot', None, 'The directory to use as rxroot (defaults to pwd)')
 
