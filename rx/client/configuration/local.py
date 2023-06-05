@@ -37,7 +37,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
 
   def setup_remote(self):
     """Sets the "remote" field (and color) for the local config."""
-    remote = _REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE
+    remote = str(_REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE)
     remote_path = self._workspace_dir / remote
     try:
       with remote_path.open(mode='rt', encoding='utf-8') as fh:

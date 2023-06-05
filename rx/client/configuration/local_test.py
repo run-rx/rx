@@ -27,7 +27,7 @@ class LocalTests(unittest.TestCase):
     cfg = local.create_local_config(self._rxroot)
 
     self.assertEqual(cfg['project_name'], self._rxroot.name)
-    self.assertEqual(cfg['remote'], 'default')
+    self.assertEqual(cfg['remote'], '.rx/remotes/default')
 
   @flagsaver.flagsaver(remote='test')
   def test_create_target_env(self):
@@ -73,9 +73,7 @@ class LocalTests(unittest.TestCase):
     self.assertEqual(got, expected)
 
   def _create_remote(self, cfg: Dict[str, Any], remote_name: str = 'test'):
-    remote_dir = self._rxroot / local._REMOTE_DIR
-    remote_dir.mkdir(exist_ok=True, parents=True)
-    remote_config_file = remote_dir / remote_name
+    remote_config_file = self._rxroot / remote_name
     with remote_config_file.open(mode='wt', encoding='utf-8') as fh:
       json.dump(cfg, fh)
 
