@@ -71,8 +71,9 @@ class ExecCommand:
 class VersionCommand:
   """Prints the version."""
 
-  def run(self):
+  def run(self) -> int:
     print(local.VERSION)
+    return 0
 
 
 def main(argv):
