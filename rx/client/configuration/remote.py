@@ -7,6 +7,14 @@ class Remote(config_base.ReadOnlyConfig):
   def __init__(self, working_dir: pathlib.Path):
     super().__init__(_get_remote_config_file(working_dir))
 
+  @property
+  def workspace_id(self):
+    return self['workspace_id']
+
+  @property
+  def worker_addr(self):
+    return self['worker_addr']
+
 
 class WritableRemote(config_base.ReadWriteConfig):
   def __init__(self, working_dir: pathlib.Path):

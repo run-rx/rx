@@ -80,11 +80,10 @@ class Client():
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
       r['worker_addr'] = resp.worker_addr
-      r['grpc_addr'] = f'{resp.worker_addr}'
       r['daemon_module'] = resp.rsync_dest.daemon_module
     self._run_initial_rsync()
     sys.stdout.write('Done.\n')
-    self._install_deps(f'{resp.worker_addr}', resp.workspace_id)
+    self._install_deps(resp.worker_addr, resp.workspace_id)
     print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
     return 0
 
@@ -126,8 +125,8 @@ class Client():
     if return_code == 0:
       logging.info('Copied files to %s', r.host)
 
-  def _install_deps(self, grpc_addr: str, workspace_id: str) -> int:
-    channel = grpc_helper.get_channel(grpc_addr)
+  def _install_deps(self, worker_addr: str, workspace_id: str) -> int:
+    channel = grpc_helper.get_channel(worker_addr)
     stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     req = rx_pb2.InstallDepsRequest(workspace_id=workspace_id)
     resp = None

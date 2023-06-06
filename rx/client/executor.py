@@ -27,7 +27,7 @@ class Client():
       channel: grpc.Channel,
       local_cfg: local.LocalConfig,
       remote_cfg: remote.Remote):
-    self._uri = remote_cfg['grpc_addr']
+    self._uri = remote_cfg.worker_addr
     self._rsync = rsync.RsyncClient(local_cfg, remote_cfg)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     self._metadata = local.get_grpc_metadata()
@@ -45,11 +45,11 @@ class Client():
 
     result = self._rsync.to_remote()
     if result != 0:
-      raise UnreachableError(self._local_cfg["worker_addr"], result)
+      raise UnreachableError(self._uri, result)
     result = None
 
     request = rx_pb2.ExecRequest(
-      workspace_id=self._remote_cfg['workspace_id'],
+      workspace_id=self._remote_cfg.workspace_id,
       argv=argv,
       rsync_source=self._local_cfg.rsync_source)
 
@@ -91,7 +91,7 @@ class Client():
       return
 
     req = rx_pb2.KillRequest(
-      workspace_id=self._remote_cfg['workspace_id'],
+      workspace_id=self._remote_cfg.workspace_id,
       execution_id=self._current_execution_id,
     )
     self._stub.Kill(req, metadata=self._metadata)

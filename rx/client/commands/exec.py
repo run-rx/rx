@@ -41,7 +41,7 @@ class ExecCommand:
       print ('Run `rx init` first!')
       return -1
     remote_cfg = remote.Remote(self._config.cwd)
-    with grpc_helper.get_channel(remote_cfg['grpc_addr']) as ch:
+    with grpc_helper.get_channel(remote_cfg.worker_addr) as ch:
       client = executor.Client(ch, self._config, remote_cfg)
       return self._try_exec(client)
 
