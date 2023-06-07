@@ -43,20 +43,21 @@ class Client:
       for resp in self._stub.Init(req, metadata=self._metadata):
         if resp.result.code != 0:
           raise InitError(
-            f'Error initializing worker {self._remote_cfg.worker_addr}: {resp.result.message}')
+            f'Error initializing worker {self._remote_cfg.worker_addr}: '
+            f'{resp.result.message}')
         if resp.pull_progress:
           pp = resp.pull_progress
-          if pp.id not in progress_bars and pp.total > 0:
-            progress_bars[pp.id] = tqdm.tqdm(
-              desc=f'{pp.status} layer {pp.id}',
-              total=pp.total,
-              unit=' bytes')
-          if pp.id in progress_bars:
-            cur_bar = progress_bars[pp.id]
-            cur_bar.update(pp.current - cur_bar.n)
+          if pp.id not in progress_bars:
+            # First item must have a total.
+            if pp.total == 0:
+              continue
+            progress_bars[pp.id] = ProgressBar(pp)
+          progress_bars[pp.id].update(pp)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
-      raise InitError(f'Error initializing worker {self._remote_cfg.worker_addr}: {e.details()}')
+      raise InitError(
+        f'Error initializing worker {self._remote_cfg.worker_addr}: '
+        f'{e.details()}')
     for p in progress_bars.values():
       p.close()
 
@@ -144,6 +145,32 @@ def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
   lm = login.LoginManager(local_cfg.cwd)
   lm.login()
   return Client(ch, local_cfg, lm.grpc_metadata)
+
+
+class ProgressBar:
+
+  def __init__(self, pp: rx_pb2.DockerImagePullProgress) -> None:
+    assert pp.total > 0
+    self._bar = tqdm.tqdm(
+      desc=f'{pp.status} layer {pp.id}',
+      total=pp.total,
+      unit=' bytes')
+    self._is_done = False
+
+  def close(self):
+    self._bar.close()
+
+  def update(self, pp: rx_pb2.DockerImagePullProgress):
+    if pp.total == 0:
+      self._bar.set_description(f'{pp.status} layer {pp.id}')
+      return
+    if self._is_done:
+      return
+
+    # Note: this jumps back to 0 for download -> extract, which is good?
+    self._bar.update(pp.current - self._bar.n)
+    if self._bar.n == pp.total:
+      self._is_done = True
 
 
 # TODO: this needs to take code.
