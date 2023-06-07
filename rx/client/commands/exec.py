@@ -19,7 +19,7 @@ from typing import List
 from absl import app
 from absl import logging
 
-from rx.client import executor
+from rx.client import worker_client
 from rx.client import grpc_helper
 from rx.client.commands import init
 from rx.client.configuration import config_base
@@ -42,10 +42,10 @@ class ExecCommand:
       return -1
     remote_cfg = remote.Remote(self._config.cwd)
     with grpc_helper.get_channel(remote_cfg.worker_addr) as ch:
-      client = executor.Client(ch, self._config, remote_cfg)
+      client = worker_client.create_authed_client(ch, self._config)
       return self._try_exec(client)
 
-  def _try_exec(self, client: executor.Client) -> int:
+  def _try_exec(self, client: worker_client.Client) -> int:
     """Sends the command to the server."""
     if len(self._argv) < 1:
       print('No command given.')
@@ -60,8 +60,8 @@ class ExecCommand:
       return client.exec(self._argv)
     except KeyboardInterrupt:
       client.maybe_kill()
-      return executor.SIGINT_CODE
-    except executor.UnreachableError as e:
+      return worker_client.SIGINT_CODE
+    except worker_client.UnreachableError as e:
       print(
         f'Worker {e.worker} was unrechable, run `rx init` to get a new '
         'instance.')
@@ -98,7 +98,7 @@ def main(argv):
       cmd = ExecCommand(argv[1:])
     return cmd.run()
   except KeyboardInterrupt:
-    return executor.SIGINT_CODE
+    return worker_client.SIGINT_CODE
 
 
 def run():

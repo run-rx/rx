@@ -1,0 +1,157 @@
+import sys
+from typing import List, Tuple, cast
+
+from absl import logging
+import grpc
+import tqdm
+
+from rx.client import login
+from rx.client import output_handler
+from rx.client import rsync
+from rx.client.configuration import local
+from rx.client.configuration import remote
+from rx.proto import rx_pb2
+from rx.proto import rx_pb2_grpc
+
+SIGINT_CODE = 130
+
+# TODO: set up UI for looking at previous executions.
+_BASE_URI = 'https://la-brea.run-rx.com'
+_NOT_REACHABLE = 1
+
+
+class Client:
+  """Handle contacting the remote server."""
+
+  def __init__(
+      self,
+      channel: grpc.Channel,
+      local_cfg: local.LocalConfig,
+      auth_metadata: Tuple[Tuple[str, str]]):
+    self._local_cfg = local_cfg
+    self._remote_cfg = remote.Remote(local_cfg.cwd)
+    self._rsync = rsync.RsyncClient(local_cfg, self._remote_cfg)
+    self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
+    self._metadata = local.get_grpc_metadata() + auth_metadata
+    self._current_execution_id = None
+
+  def init(self):
+    # Get the container downloaded/running.
+    req = rx_pb2.WorkerInitRequest(workspace_id=self._remote_cfg.workspace_id)
+    progress_bars = {}
+    try:
+      for resp in self._stub.Init(req, metadata=self._metadata):
+        if resp.result.code != 0:
+          raise InitError(
+            f'Error initializing worker {self._remote_cfg.worker_addr}: {resp.result.message}')
+        if resp.pull_progress:
+          pp = resp.pull_progress
+          if pp.id not in progress_bars and pp.total > 0:
+            progress_bars[pp.id] = tqdm.tqdm(
+              desc=f'{pp.status} layer {pp.id}',
+              total=pp.total,
+              unit=' bytes')
+          if pp.id in progress_bars:
+            cur_bar = progress_bars[pp.id]
+            cur_bar.update(pp.current - cur_bar.n)
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      raise InitError(f'Error initializing worker {self._remote_cfg.worker_addr}: {e.details()}')
+    for p in progress_bars.values():
+      p.close()
+
+    # Sync sources.
+    result = self._rsync.to_remote()
+    if result != 0:
+      raise UnreachableError(self._remote_cfg.worker_addr, result)
+
+    # Install deps.
+    self._install_deps()
+
+  def exec(self, argv: List[str]) -> int:
+    cmd_str = ' '.join(argv)
+    logging.info(f'Running `{cmd_str}` on {self._remote_cfg.worker_addr}')
+
+    result = self._rsync.to_remote()
+    if result != 0:
+      raise UnreachableError(self._remote_cfg.worker_addr, result)
+
+    request = rx_pb2.ExecRequest(
+      workspace_id=self._remote_cfg.workspace_id,
+      argv=argv,
+      rsync_source=self._local_cfg.rsync_source)
+
+    out_handler = output_handler.OutputHandler(self._local_cfg.cwd)
+    response = None
+    try:
+      for response in self._stub.Exec(request, metadata=self._metadata):
+        self._current_execution_id = response.execution_id
+        out_handler.handle(response)
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      sys.stderr.write(f'Error contacting {self._remote_cfg.worker_addr}: {e.details()}\n')
+      return _NOT_REACHABLE
+    except KeyboardInterrupt:
+      self.maybe_kill()
+      return SIGINT_CODE
+    except RuntimeError as e:
+      # Bug in grpc, probably.
+      msg = str(e)
+      if msg == 'cannot release un-acquired lock':
+        self.maybe_kill()
+        return SIGINT_CODE
+      else:
+        sys.stderr.write(msg)
+        return -1
+
+    out_handler.write_outputs(self._rsync)
+
+    if (response is not None and response.HasField('result') and
+        response.result.code != 0):
+      sys.stderr.write(f'{response.result.message}\n')
+      return response.result.code
+    return 0
+
+  def maybe_kill(self):
+    """Kill the process, if it exists."""
+    if self._current_execution_id is None:
+      logging.error('No ID to kill.')
+      return
+
+    req = rx_pb2.KillRequest(
+      workspace_id=self._remote_cfg.workspace_id,
+      execution_id=self._current_execution_id,
+    )
+    self._stub.Kill(req, metadata=self._metadata)
+
+  def _install_deps(self):
+    req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)
+    resp = None
+    try:
+      for resp in self._stub.InstallDeps(
+        req, metadata=self._metadata, timeout=(10 * 60)):
+        if resp.stdout:
+          sys.stdout.buffer.write(resp.stdout)
+          sys.stdout.buffer.flush()
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      raise InitError(e.details(), -1)
+    if resp and resp.HasField('result') and resp.result.code:
+      raise InitError(resp.result.message, resp.result.code)
+
+
+def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
+  lm = login.LoginManager(local_cfg.cwd)
+  lm.login()
+  return Client(ch, local_cfg, lm.grpc_metadata)
+
+
+# TODO: this needs to take code.
+class InitError(RuntimeError):
+  pass
+
+class UnreachableError(RuntimeError):
+  def __init__(self, worker_addr: str, code: int, *args: object) -> None:
+    super().__init__(*args)
+    self.worker = worker_addr
+    self.code = code

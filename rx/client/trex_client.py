@@ -9,6 +9,7 @@ from rx.client import grpc_helper
 from rx.client import login
 from rx.client import rsync
 from rx.client import user
+from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.proto import rx_pb2
@@ -62,6 +63,7 @@ class Client():
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
     )
+    # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
     sys.stdout.flush()
     try:
@@ -74,16 +76,16 @@ class Client():
     if resp.result.code != 0:
       raise InitError(resp.result.message, -1)
 
-    # TODO: create a threaded UserStatus class with __enter__/__exit__.
-    sys.stdout.write('Copying source code... ')
-    sys.stdout.flush()
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
       r['worker_addr'] = resp.worker_addr
       r['daemon_module'] = resp.rsync_dest.daemon_module
-    self._run_initial_rsync()
+
+    # Create a container on the worker.
+    with grpc_helper.get_channel(resp.worker_addr) as ch:
+      worker = worker_client.create_authed_client(ch, self._local_cfg)
+      worker.init()
     sys.stdout.write('Done.\n')
-    self._install_deps(resp.worker_addr, resp.workspace_id)
     print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
     return 0
 
@@ -118,30 +120,11 @@ class Client():
       raise InitError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
 
-  def _run_initial_rsync(self):
-    r = rsync.RsyncClient(
-      self._local_cfg, remote.Remote(self._local_cfg.cwd))
+  def _run_initial_rsync(self, remote_cfg: remote.Remote):
+    r = rsync.RsyncClient(self._local_cfg, remote_cfg)
     return_code = r.to_remote()
     if return_code == 0:
       logging.info('Copied files to %s', r.host)
-
-  def _install_deps(self, worker_addr: str, workspace_id: str) -> int:
-    channel = grpc_helper.get_channel(worker_addr)
-    stub = rx_pb2_grpc.ExecutionServiceStub(channel)
-    req = rx_pb2.InstallDepsRequest(workspace_id=workspace_id)
-    resp = None
-    try:
-      for resp in stub.InstallDeps(
-        req, metadata=self._metadata, timeout=(10 * 60)):
-        if resp.stdout:
-          sys.stdout.buffer.write(resp.stdout)
-          sys.stdout.buffer.flush()
-    except grpc.RpcError as e:
-      e = cast(grpc.Call, e)
-      raise InitError(e.details(), -1)
-    if resp and resp.HasField('result') and resp.result.code:
-      raise InitError(resp.result.message, resp.result.code)
-    return 0
 
 
 class InitError(RuntimeError):

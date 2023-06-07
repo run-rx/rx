@@ -30,6 +30,13 @@ message Delta {
   repeated string remove_path = 3;
 }
 
+message DockerImagePullProgress {
+  string id = 1;
+  string status = 2;
+  int32 total = 3;
+  int32 current = 4;
+}
+
 enum StatusCode {
   OK = 0;
   UNKNOWN = 1;
@@ -109,7 +116,17 @@ message SetUsernameResponse {
   Result result = 1;
 }
 
+message WorkerInitRequest {
+  string workspace_id = 1;
+}
+
+message WorkerInitResponse {
+  Result result = 1;
+  DockerImagePullProgress pull_progress = 2;
+}
+
 service ExecutionService {
+  rpc Init(WorkerInitRequest) returns (stream WorkerInitResponse) {}
   rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
