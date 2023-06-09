@@ -11,12 +11,18 @@ import pathlib
 from typing import Any, Callable, List, Optional
 
 
-def bool_prompt(prompt: str) -> bool:
-  response = input(f'{prompt} (y/n): ')
+def bool_prompt(prompt: str, default_opt: str = '') -> bool:
+  y = 'Y' if default_opt == 'y' else 'y'
+  n = 'N' if default_opt == 'n' else 'n'
+  response = input(f'{prompt} ({y}/{n}): ')
+  if not response:
+    response = default_opt
+  response = response.lower()
   if response == 'y':
     return True
   elif response == 'n':
     return False
+  print('Please choose "y" or "n".')
   return bool_prompt(prompt)
 
 

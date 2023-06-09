@@ -277,6 +277,12 @@ def decode_id_token(b64: str) -> Dict[str, Any]:
   return jwt.decode(b64, options={'verify_signature': False})
 
 
+def needs_login(rxroot: pathlib.Path) -> bool:
+  return not (
+    _get_access_token_file(rxroot).exists() and
+    _get_refresh_token_file(rxroot).exists())
+
+
 def _get_access_token_file(rxroot: pathlib.Path) -> pathlib.Path:
   return config_base.get_config_dir(rxroot) / 'user/access-token'
 
