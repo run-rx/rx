@@ -23,11 +23,20 @@ IGNORE = [
   '^.vscode',
   '^build',
   '^dist',
+  '^release.sh',
   '^requirements.txt',
   '^requirements_test.txt',
   '^rx-out',
   '_test.py$',
   '.proto$',
+]
+
+REMOVE_REQS = [
+  'certifi',
+  'charset-normalizer',
+  'grpcio-tools',
+  'idna',
+  'urllib3',
 ]
 
 
@@ -49,12 +58,27 @@ class PackagingTests(unittest.TestCase):
         self.assertIn(
           pkg_path, tar_ent, f'Missing file {pkg_path} in {tgz_path}')
 
-  def test_version_matches_in_code_and_config(self):
+
+class TomlTests(unittest.TestCase):
+
+  def setUp(self) -> None:
+    super().setUp()
     with open('pyproject.toml', mode='rt', encoding='utf-8') as fh:
-      pyproject = toml.load(fh)
-      print(pyproject)
+      self._pyproject = toml.load(fh)
+
+  def test_version_matches_in_code_and_config(self):
     self.assertEqual(
-      local.VERSION, pyproject['tool']['poetry']['version'])
+      local.VERSION, self._pyproject['tool']['poetry']['version'])
+
+  def test_requirements_all_there(self):
+    got = list(self._pyproject['tool']['poetry']['dependencies'].keys())
+    got.remove('python')
+
+    reqs = open('requirements.txt', 'r')
+    expected = [x.split('==')[0] for x in reqs.readlines()]
+    for rr in REMOVE_REQS:
+      expected.remove(rr)
+    self.assertEqual(got, expected)
 
 
 def _get_latest_tgz() -> Tuple[version.Version, str]:
