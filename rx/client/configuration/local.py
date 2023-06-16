@@ -32,7 +32,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
   the local machine."""
 
   def __init__(self, workspace_dir: pathlib.Path):
-    super().__init__(_get_local_config_file(workspace_dir))
+    super().__init__(get_local_config_path(workspace_dir))
     self._workspace_dir = workspace_dir
 
   def setup_remote(self):
@@ -65,7 +65,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
   """Create the local configuration."""
 
   def __init__(self, working_dir: pathlib.Path):
-    super().__init__(_get_local_config_file(working_dir))
+    super().__init__(get_local_config_path(working_dir))
     self._cwd = working_dir
     self.config_dir = self.cwd / config_base.RX_DIR
     self._color = None
@@ -118,15 +118,25 @@ class LocalConfig(config_base.ReadOnlyConfig):
     return f'{fg}{s}{sty.rs.fg}'
 
 
-def create_local_config(cwd: pathlib.Path) -> LocalConfig:
+def create_local_config(rxroot: pathlib.Path) -> LocalConfig:
   """Gets or creates .rx directory."""
-  config_dir = _get_local_config_file(cwd).parent
+  _install_local_files(rxroot)
+  config_dir = get_local_config_path(rxroot).parent
   config_dir.mkdir(exist_ok=True, parents=True)
-  with LocalConfigWriter(cwd) as c:
+  with LocalConfigWriter(rxroot) as c:
     c.setup_remote()
-    c['project_name'] = _find_project_name(cwd)
+    c['project_name'] = _find_project_name(rxroot)
     c['rsync_path'] = _get_rsync_path()
-  return LocalConfig(cwd)
+  return LocalConfig(rxroot)
+
+
+def find_rxroot(working_dir: pathlib.Path) -> Optional[pathlib.Path]:
+  """Finds the rxroot, if it exists."""
+  cfg_path = config_base.get_config_dir(working_dir)
+  for parent in cfg_path.parents:
+    if config_base.get_config_dir(parent).exists():
+      return parent
+  return None
 
 
 def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
@@ -148,19 +158,19 @@ def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
   return (('cv', VERSION),)
 
 
-def install_local_files(cwd: pathlib.Path):
+def _install_local_files(rxroot: pathlib.Path):
   # Output directory.
-  (cwd / 'rx-out').mkdir(exist_ok=True)
+  (rxroot / 'rx-out').mkdir(exist_ok=True)
 
   install_dir = pathlib.Path(get_source_path() / 'install')
 
-  _install_file(install_dir, cwd, IGNORE)
+  _install_file(install_dir, rxroot, IGNORE)
 
-  config_dir = cwd / config_base.RX_DIR
+  config_dir = rxroot / config_base.RX_DIR
   config_dir.mkdir(exist_ok=True, parents=True)
   _install_file(install_dir, config_dir, 'README.md')
 
-  remotes = cwd / _REMOTE_DIR
+  remotes = rxroot / _REMOTE_DIR
   remotes.mkdir(exist_ok=True, parents=True)
 
   # Copy built-in configs.
@@ -201,7 +211,7 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
   return start_dir.name
 
 
-def _get_local_config_file(rxroot: pathlib.Path) -> pathlib.Path:
+def get_local_config_path(rxroot: pathlib.Path) -> pathlib.Path:
   """Return .rx/trex-dev.run-rx.com/config/local."""
   return config_base.get_config_dir(rxroot) / 'local'
 

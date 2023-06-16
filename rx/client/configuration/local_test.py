@@ -17,7 +17,7 @@ class LocalTests(unittest.TestCase):
   def setUp(self) -> None:
     super().setUp()
     self._rxroot = pathlib.Path(tempfile.mkdtemp())
-    local.install_local_files(self._rxroot)
+    local._install_local_files(self._rxroot)
 
   def tearDown(self) -> None:
     super().tearDown()

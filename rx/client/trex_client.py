@@ -69,12 +69,12 @@ class Client():
     try:
       # Five minute timeout.
       resp = self._stub.Init(req, metadata=self._metadata, timeout=(5 * 60))
-      sys.stdout.write('Done.\n')
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       raise InitError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       raise InitError(resp.result.message, -1)
+    sys.stdout.write('Done.\n')
 
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
@@ -82,6 +82,8 @@ class Client():
       r['daemon_module'] = resp.rsync_dest.daemon_module
 
     # Create a container on the worker.
+    sys.stdout.write('Setting up the container... ')
+    sys.stdout.flush()
     with grpc_helper.get_channel(resp.worker_addr) as ch:
       worker = worker_client.create_authed_client(ch, self._local_cfg)
       worker.init()
@@ -96,6 +98,7 @@ class Client():
       resp = self._stub.SetUsername(
         req, metadata=self._metadata, timeout=_TIMEOUT)
     except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
       raise InitError(f'Could not set username: {e.details()}', -1)
     if resp.result.code == rx_pb2.INVALID:
       raise InitError(
