@@ -28,6 +28,7 @@ protobuf = "^4.22.3"
 PyJWT = "^2.6.0"
 requests = "^2.30.0"
 sty = "^1.0.4"
+tqdm = "^4.65.0"
 
 [tool.poetry.scripts]
 rx = 'rx.client.commands.exec:run'
