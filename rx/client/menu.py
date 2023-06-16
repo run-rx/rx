@@ -10,8 +10,17 @@ Each helper function has the same general structure:
 import pathlib
 from typing import Any, Callable, List, Optional
 
+from absl import flags
+
+_QUIET = flags.DEFINE_bool(
+    'quiet', False, 'Don\'t prompt for user confirmation, go with the default '
+    'option automatically')
+
 
 def bool_prompt(prompt: str, default_opt: str = '') -> bool:
+  assert default_opt in ['', 'y', 'n']
+  if _QUIET.value and default_opt:
+    return default_opt == 'y'
   y = 'Y' if default_opt == 'y' else 'y'
   n = 'N' if default_opt == 'n' else 'n'
   response = input(f'{prompt} ({y}/{n}): ')
@@ -29,6 +38,8 @@ def bool_prompt(prompt: str, default_opt: str = '') -> bool:
 def numbered_options_prompt(
     prompt: str, options: List[Any], default: int = 0) -> int:
   """Prompt with a numbered list of options."""
+  if _QUIET.value:
+    return default
 
   # Setup
   assert options
@@ -55,6 +66,8 @@ def path_prompt(
   validation: Callable[[Optional[pathlib.Path]], bool] = lambda x: True
 ) -> pathlib.Path:
   """Prompt for filesystem path."""
+  if _QUIET.value and default_path:
+    return default_path
 
   # Setup.
   if default_path:
@@ -79,6 +92,9 @@ def string_prompt(
   default_str: Optional[str] = None,
   validation:  Callable[[Optional[str]], bool] = lambda x: True
 ) -> str:
+  if _QUIET.value and default_str:
+    return default_str
+
   # Setup.
   if default_str:
     response = input(f'{prompt}\n[{default_str}]: ')

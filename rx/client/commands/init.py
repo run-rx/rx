@@ -111,7 +111,8 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
         if not ready_to_upload:
           print('Okay, goodbye!')
           return 0
-        print('Great! Let\'s get down to business.')
+        if not menu._QUIET.value:
+          print('Great! Let\'s get down to business.')
         return client.init()
     except trex_client.InitError as e:
       sys.stderr.write(f'{e}\n')
