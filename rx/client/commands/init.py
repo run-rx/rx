@@ -8,6 +8,7 @@ from rx.client import grpc_helper
 from rx.client import login
 from rx.client import menu
 from rx.client import trex_client
+from rx.client import worker_client
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
@@ -117,6 +118,11 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
     except trex_client.InitError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
+      return e.code
+    except worker_client.UnreachableError as e:
+      print(
+        f'Worker {e.worker} was unrechable, run `rx init` to get a new '
+        'instance.')
       return e.code
 
 if __name__ == '__main__':
