@@ -21,7 +21,8 @@ message Python {
 
 message Environment {
   Remote alloc = 1;
-  Python python = 2;
+  Python python = 2 [deprecated = true];
+  string sh = 3;
 }
 
 message Delta {
@@ -65,7 +66,8 @@ message RsyncDestination {
 message ExecRequest {
   string workspace_id = 1;
   repeated string argv = 2;
-  RsyncSource rsync_source = 3;
+  RsyncSource rsync_source = 3 [deprecated = true];
+  string cwd = 4;
 }
 
 message ExecResponse {

@@ -1,6 +1,10 @@
+
+import os
+import pathlib
 import sys
 from typing import List, Tuple, cast
 
+from absl import flags
 from absl import logging
 import grpc
 import tqdm
@@ -19,6 +23,7 @@ SIGINT_CODE = 130
 _BASE_URI = 'https://la-brea.run-rx.com'
 _NOT_REACHABLE = 1
 
+_CWD = flags.DEFINE_string('cwd', None, 'Directory to run the command from')
 
 class Client:
   """Handle contacting the remote server."""
@@ -77,10 +82,14 @@ class Client:
     if result != 0:
       raise UnreachableError(self._remote_cfg.worker_addr, result)
 
+    rxroot = os.path.abspath(self._local_cfg.cwd)
+    cwd = os.path.abspath(pathlib.Path.cwd())
+    if is_subdir(parent=rxroot, child=cwd):
+      cwd = str(pathlib.Path.cwd().relative_to(self._local_cfg.cwd))
+    else:
+      cwd = _CWD.value
     request = rx_pb2.ExecRequest(
-      workspace_id=self._remote_cfg.workspace_id,
-      argv=argv,
-      rsync_source=self._local_cfg.rsync_source)
+      workspace_id=self._remote_cfg.workspace_id, argv=argv, cwd=cwd)
 
     out_handler = output_handler.OutputHandler(self._local_cfg.cwd)
     response = None
@@ -145,6 +154,10 @@ def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
   lm = login.LoginManager(local_cfg.cwd)
   lm.login()
   return Client(ch, local_cfg, lm.grpc_metadata)
+
+
+def is_subdir(*, parent: str, child: str) -> bool:
+  return os.path.commonpath([parent]) == os.path.commonpath([parent, child])
 
 
 class ProgressBar:

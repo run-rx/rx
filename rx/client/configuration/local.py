@@ -2,6 +2,7 @@
 import hashlib
 import json
 import pathlib
+import os
 import shutil
 import subprocess
 from typing import Optional, Tuple
@@ -9,6 +10,7 @@ import uuid
 
 from absl import flags
 from absl import logging
+from google.protobuf import json_format
 import sty
 
 from rx.client.configuration import config_base
@@ -81,36 +83,21 @@ class LocalConfig(config_base.ReadOnlyConfig):
       directory=str(self.cwd),
     )
 
-  def _get_source_env(self, docker_image: str) -> rx_pb2.Environment:
-    # TODO: how to automatically determine language?
-    if 'python' not in docker_image:
-      logging.info('Using a non-Python image. There be dragons here.')
-      return rx_pb2.Environment()
-    return rx_pb2.Environment(python=rx_pb2.Python())
-
   def get_target_env(self) -> rx_pb2.Environment:
     remote_file = self.cwd / self['remote']
+    with remote_file.open(mode='rt', encoding='utf-8') as fh:
+      json_str = fh.read()
     try:
-      with remote_file.open(mode='rt', encoding='utf-8') as fh:
-        remote_config = json.load(fh)
+      json.loads(json_str)
     except json.JSONDecodeError as e:
       logging.exception(f'Could not parse {self["remote"]}')
       raise e
-    env = rx_pb2.Environment(alloc=rx_pb2.Remote())
-    if 'image' not in remote_config or 'docker' not in remote_config['image']:
-      raise ConfigError(
-        f'Remote config {self["remote"]} must contain "image": '
-        '{"docker": "<docker image>"}')
-    docker_image = remote_config['image']['docker']
-    env.alloc.image.CopyFrom(rx_pb2.Remote.Image(
-      docker=docker_image,
-    ))
-    if 'hardware' in remote_config and 'processor' in remote_config['hardware']:
-      env.alloc.hardware.CopyFrom(rx_pb2.Remote.Hardware(
-        processor=remote_config['hardware']['processor']
-      ))
-    env.MergeFrom(self._get_source_env(docker_image))
-    return env
+    target_env = rx_pb2.Remote()
+    json_format.Parse(json_str, target_env)
+    return rx_pb2.Environment(
+      alloc=target_env,
+      sh=os.environ['SHELL'],
+    )
 
   def color_str(self, s: str) -> str:
     color = self['color']
