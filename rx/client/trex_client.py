@@ -54,10 +54,6 @@ class Client():
       target_env = self._local_cfg.get_target_env()
     except local.ConfigError as e:
       raise InitError(str(e), -1)
-    if target_env.alloc.hardware.processor == 'gpu':
-      print('rx only works with CPUs at the moment, but I appreciate your '
-            'enthusiasm! Try setting --remote=python-cpu for now.')
-      return -1
     req = rx_pb2.InitRequest(
       project_name=self._local_cfg['project_name'],
       rsync_source=self._local_cfg.rsync_source,

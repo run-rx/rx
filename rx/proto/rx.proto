@@ -4,16 +4,28 @@ import 'google/protobuf/empty.proto';
 
 package rx;
 
+message Hardware {
+  message Disks {
+    message DiskSpec {
+      string size = 1;
+      string mount_point = 2;
+      string source = 3;
+    }
+    string rxroot_size = 1;
+    repeated DiskSpec other = 2;
+  }
+  string processor = 1;
+  Disks disks = 2;
+}
+
 message Remote {
   message Image {
     string docker = 1;
     string tag = 2;
   }
-  message Hardware {
-    string processor = 1;
-  }
   Image image = 1;
   Hardware hardware = 2;
+  repeated int32 ports = 3;
 }
 
 message Python {
