@@ -106,7 +106,7 @@ def _run_rsync(cmd: List[str]) -> int:
     logging.error('Error running `%s`', ' '.join(e.cmd))
     if e.returncode == 10:
       # Worker was unreachable.
-      logging.error('stderr: %s', e.stderr)
+      logging.error('stderr: %s', e.stderr.decode('utf-8'))
     if e.returncode is None:
       return -1
     return e.returncode

@@ -40,7 +40,11 @@ class ExecCommand:
     if self._config is None:
       print ('Run `rx init` first!')
       return -1
-    remote_cfg = remote.Remote(self._config.cwd)
+    try:
+      remote_cfg = remote.Remote(self._config.cwd)
+    except config_base.ConfigNotFoundError as e:
+      print(f'Remote config {e.path} not found, try running rx init again')
+      return -1
     with grpc_helper.get_channel(remote_cfg.worker_addr) as ch:
       client = worker_client.create_authed_client(ch, self._config)
       return self._try_exec(client)

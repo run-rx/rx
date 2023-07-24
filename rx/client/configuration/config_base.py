@@ -20,11 +20,14 @@ RX_ROOT = flags.DEFINE_string(
 class ReadOnlyConfig(abc.Mapping):
   def __init__(self, config_file: pathlib.Path, strict_mode: bool = True):
     self._config_file = config_file
-    if not strict_mode and not config_file.exists():
-      self._config = {}
-      return
-    with self._config_file.open(mode='rt', encoding='utf-8') as fh:
-      self._config = json.load(fh)
+    if config_file.exists():
+      with self._config_file.open(mode='rt', encoding='utf-8') as fh:
+        self._config = json.load(fh)
+    else:
+      if strict_mode:
+        raise ConfigNotFoundError(config_file)
+      else:
+        self._config = {}
 
   def __getitem__(self, item):
     assert item in self._config, (
@@ -69,3 +72,9 @@ def get_config_dir(rxroot: pathlib.Path) -> pathlib.Path:
 
 def is_local() -> bool:
   return TREX_HOST.value.startswith('localhost')
+
+
+class ConfigNotFoundError(FileNotFoundError):
+  def __init__(self, pth: pathlib.Path, *args: object) -> None:
+    super().__init__(*args)
+    self.path = pth

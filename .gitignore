@@ -11,3 +11,4 @@ rx/proto/rx_pb2*
 build
 dist
 poetry.lock
+sample_rxroot
