@@ -130,6 +130,14 @@ message SetUsernameResponse {
   Result result = 1;
 }
 
+message StopRequest {
+  string workspace_id = 1;
+}
+
+message StopResponse {
+  Result result = 1;
+}
+
 message WorkerInitRequest {
   string workspace_id = 1;
 }
@@ -150,4 +158,5 @@ service SetupService {
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}
+  rpc Stop(StopRequest) returns (StopResponse) {}
 }

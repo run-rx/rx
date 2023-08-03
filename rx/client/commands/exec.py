@@ -21,15 +21,18 @@ from absl import logging
 
 from rx.client import worker_client
 from rx.client import grpc_helper
+from rx.client.commands import command
 from rx.client.commands import init
+from rx.client.commands import stop
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
 
 
-class ExecCommand:
+class ExecCommand(command.Command):
 
   def __init__(self, argv: List[str]):
+    super().__init__()
     self._argv = argv
     cwd = (
       pathlib.Path(config_base.RX_ROOT.value) if config_base.RX_ROOT.value else
@@ -91,6 +94,8 @@ def main(argv):
   try:
     if cmd_to_run == 'init':
       cmd = init.InitCommand()
+    elif cmd_to_run == 'stop':
+      cmd = stop.StopCommand()
     elif cmd_to_run == 'version':
       cmd = VersionCommand()
     else:

@@ -9,6 +9,7 @@ from rx.client import login
 from rx.client import menu
 from rx.client import trex_client
 from rx.client import worker_client
+from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
@@ -16,24 +17,19 @@ _DRY_RUN = flags.DEFINE_bool(
   'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
 
 
-class InitCommand:
+class InitCommand(command.Command):
   """Initialize (or reinitialize) the remote."""
 
   def __init__(self):
-    if config_base.RX_ROOT.value:
-      rxroot = pathlib.Path(config_base.RX_ROOT.value)
-    else:
-      rxroot = local.find_rxroot(pathlib.Path.cwd())
-
-    if rxroot:
-      self._config_exists = local.get_local_config_path(rxroot).exists()
-      self._user_info_exists = not login.needs_login(rxroot)
+    super().__init__()
+    if self._rxroot:
+      self._config_exists = local.get_local_config_path(self._rxroot).exists()
+      self._user_info_exists = not login.needs_login(self._rxroot)
     else:
       # Fall back on using this dir for rxroot.
-      rxroot = pathlib.Path.cwd()
+      self._rxroot = pathlib.Path.cwd()
       self._config_exists = False
       self._user_info_exists = False
-    self._rxroot = rxroot
 
   @property
   def rxroot(self) -> pathlib.Path:
@@ -115,7 +111,7 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
         return client.init()
-    except trex_client.InitError as e:
+    except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
