@@ -3,7 +3,7 @@ import pathlib
 import sys
 from typing import List
 
-from rx.client import rsync
+from rx.client.worker import rsync
 from rx.proto import rx_pb2
 
 

@@ -11,9 +11,9 @@ import tqdm
 
 from rx.client import login
 from rx.client import output_handler
-from rx.client import rsync
 from rx.client.configuration import local
 from rx.client.configuration import remote
+from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
@@ -75,6 +75,7 @@ class Client:
     self._install_deps()
 
   def exec(self, argv: List[str]) -> int:
+
     cmd_str = ' '.join(argv)
     logging.info(f'Running `{cmd_str}` on {self._remote_cfg.worker_addr}')
 

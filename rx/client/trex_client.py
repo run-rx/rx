@@ -7,11 +7,11 @@ import grpc
 
 from rx.client import grpc_helper
 from rx.client import login
-from rx.client import rsync
 from rx.client import user
 from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
+from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
