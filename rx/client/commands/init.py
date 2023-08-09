@@ -74,7 +74,7 @@ class InitCommand(command.Command):
     try:
       config = local.create_local_config(self._rxroot)
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        client = trex_client.Client(ch, config)
+        client = trex_client.Client(ch, config, auth_metadata=None)
         if _DRY_RUN.value:
           client.dry_run()
           return 0
