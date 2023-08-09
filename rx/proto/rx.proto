@@ -80,6 +80,7 @@ message ExecRequest {
   repeated string argv = 2;
   RsyncSource rsync_source = 3 [deprecated = true];
   string cwd = 4;
+  bytes stdin = 5;
 }
 
 message ExecResponse {
@@ -150,7 +151,7 @@ message WorkerInitResponse {
 service ExecutionService {
   rpc Init(WorkerInitRequest) returns (stream WorkerInitResponse) {}
   rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
-  rpc Exec(ExecRequest) returns (stream ExecResponse) {}
+  rpc Exec(stream ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
 }
 

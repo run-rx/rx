@@ -13,6 +13,7 @@ from rx.client import login
 from rx.client import output_handler
 from rx.client.configuration import local
 from rx.client.configuration import remote
+from rx.client.worker import executor
 from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
@@ -89,15 +90,14 @@ class Client:
       cwd = str(pathlib.Path.cwd().relative_to(self._local_cfg.cwd))
     else:
       cwd = _CWD.value
-    request = rx_pb2.ExecRequest(
-      workspace_id=self._remote_cfg.workspace_id, argv=argv, cwd=cwd)
 
     out_handler = output_handler.OutputHandler(self._local_cfg.cwd)
-    response = None
+
+    request = rx_pb2.ExecRequest(
+      workspace_id=self._remote_cfg.workspace_id, argv=argv, cwd=cwd)
+    runner = executor.Executor(self._stub, request)
     try:
-      for response in self._stub.Exec(request, metadata=self._metadata):
-        self._current_execution_id = response.execution_id
-        out_handler.handle(response)
+      response = runner.run(self._metadata)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       sys.stderr.write(f'Error contacting {self._remote_cfg.worker_addr}: {e.details()}\n')
