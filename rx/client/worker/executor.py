@@ -25,7 +25,7 @@ class Executor:
     self._request = req
 
   def run(
-      self, metadata: Tuple[Tuple[str, Any]]
+      self, metadata: Tuple[Tuple[str, Any], ...]
   ) -> Optional[rx_pb2.ExecResponse]:
     response = None
     with StdinIterator(self._request) as req_it:
