@@ -47,8 +47,9 @@ class LocalTests(unittest.TestCase):
     expected = rx_pb2.Environment(
       alloc=rx_pb2.Remote(
         image=rx_pb2.Remote.Image(docker='abc123'),
-        hardware=rx_pb2.Remote.Hardware(processor='xpu')
+        hardware=rx_pb2.Hardware(processor='xpu'),
       ),
+      sh='/bin/bash',
     )
     self.assertEqual(got, expected)
 
@@ -68,7 +69,7 @@ class LocalTests(unittest.TestCase):
       alloc=rx_pb2.Remote(
         image=rx_pb2.Remote.Image(docker='python:1.2.3'),
       ),
-      python=rx_pb2.Python(),
+      sh='/bin/bash',
     )
     self.assertEqual(got, expected)
 
