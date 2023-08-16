@@ -6,6 +6,8 @@ set -eux
 
 VERSION="${1}"
 
+# TODO: check that venv is active.
+
 # Update version.
 sed -i '' "s/VERSION = '.*'/VERSION = '$VERSION'/" rx/client/configuration/local.py
 sed -i '' 's/version = ".*"/version = "'$VERSION'"/' pyproject.toml
@@ -17,7 +19,7 @@ cp ../run-rx.github.io/index.md ./README.md
 poetry build
 
 # Test.
-PYTHONPATH=. pytest
+python run_tests.py
 
 # Deploy.
 python -m twine upload "dist/run_rx-$VERSION*"
