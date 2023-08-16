@@ -12,9 +12,6 @@ VERSION="${1}"
 sed -i '' "s/VERSION = '.*'/VERSION = '$VERSION'/" rx/client/configuration/local.py
 sed -i '' 's/version = ".*"/version = "'$VERSION'"/' pyproject.toml
 
-# Update README.md.
-cp ../run-rx.github.io/index.md ./README.md
-
 # Build.
 poetry build
 
