@@ -27,7 +27,7 @@ IGNORE = [
   '^integration_test.sh$',
   '^release.sh',
   '^requirements.txt',
-  '^requirements_test.txt',
+  '^requirements_dev.txt',
   '^run_tests.py$',
   '^rx-out',
   '\\btest_.*.py$',
@@ -38,7 +38,6 @@ IGNORE = [
 REMOVE_REQS = [
   'certifi',
   'charset-normalizer',
-  'grpcio-tools',
   'idna',
   'urllib3',
 ]
