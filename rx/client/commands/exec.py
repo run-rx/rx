@@ -34,23 +34,15 @@ class ExecCommand(command.Command):
   def __init__(self, argv: List[str]):
     super().__init__()
     self._argv = argv
-    cwd = (
-      pathlib.Path(config_base.RX_ROOT.value) if config_base.RX_ROOT.value else
-      pathlib.Path.cwd())
-    self._config = local.find_local_config(cwd)
 
   def run(self) -> int:
-    if self._config is None:
-      print ('Run `rx init` first!')
-      return -1
     try:
-      remote_cfg = remote.Remote(self._config.cwd)
+      with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:
+        client = worker_client.create_authed_client(ch, self.local_config)
+        return self._try_exec(client)
     except config_base.ConfigNotFoundError as e:
-      print(f'Remote config {e.path} not found, try running rx init again')
+      print(e)
       return -1
-    with grpc_helper.get_channel(remote_cfg.worker_addr) as ch:
-      client = worker_client.create_authed_client(ch, self._config)
-      return self._try_exec(client)
 
   def _try_exec(self, client: worker_client.Client) -> int:
     """Sends the command to the server."""
