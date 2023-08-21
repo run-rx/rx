@@ -95,19 +95,6 @@ class Client:
     print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
     return 0
 
-  def stop(self):
-    r = remote.Remote(self._local_cfg.cwd)
-    req = rx_pb2.StopRequest(workspace_id=r['workspace_id'])
-    try:
-      result = self._stub.Stop(req, metadata=self._metadata, timeout=_TIMEOUT)
-    except grpc.RpcError as e:
-      e = cast(grpc.Call, e)
-      raise TrexError(f'Could not get user from rx: {e.details()}', -1)
-
-    if result.result.code != 0:
-      raise TrexError(
-        f'Error stopping machine: {result.result.message}', result.result.code)
-
   def _create_username(self, email: str) -> str:
     username = user.username_prompt(email)
     req = rx_pb2.SetUsernameRequest(username=username)

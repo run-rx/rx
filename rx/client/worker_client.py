@@ -2,7 +2,7 @@
 import os
 import pathlib
 import sys
-from typing import List, Tuple, cast
+from typing import Generator, Iterable, List, Optional, Tuple, cast
 
 from absl import flags
 from absl import logging
@@ -44,28 +44,17 @@ class Client:
   def init(self):
     # Get the container downloaded/running.
     req = rx_pb2.WorkerInitRequest(workspace_id=self._remote_cfg.workspace_id)
-    progress_bars = {}
-    try:
-      for resp in self._stub.Init(req, metadata=self._metadata):
-        if resp.result.code != 0:
-          raise InitError(
-            f'Error initializing worker {self._remote_cfg.worker_addr}: '
-            f'{resp.result.message}')
-        if resp.pull_progress:
-          pp = resp.pull_progress
-          if pp.id not in progress_bars:
-            # First item must have a total.
-            if pp.total == 0:
-              continue
-            progress_bars[pp.id] = ProgressBar(pp)
-          progress_bars[pp.id].update(pp)
-    except grpc.RpcError as e:
-      e = cast(grpc.Call, e)
-      raise InitError(
-        f'Error initializing worker {self._remote_cfg.worker_addr}: '
-        f'{e.details()}')
-    for p in progress_bars.values():
-      p.close()
+    resp = self._stub.Init(req, metadata=self._metadata)
+    def get_progress(
+        resp: Iterable[rx_pb2.WorkerInitResponse]
+    ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
+      for r in resp:
+        if r.pull_progress:
+          yield r.pull_progress
+    result = show_progress_bars(get_progress(resp))
+    if result and result.code != 0:
+      raise WorkerError(
+        f'Error initializing worker {self._remote_cfg.worker_addr}', result)
 
     # Sync sources.
     result = self._rsync.to_remote()
@@ -76,7 +65,6 @@ class Client:
     self._install_deps()
 
   def exec(self, argv: List[str]) -> int:
-
     cmd_str = ' '.join(argv)
     logging.info(f'Running `{cmd_str}` on {self._remote_cfg.worker_addr}')
 
@@ -135,6 +123,19 @@ class Client:
     )
     self._stub.Kill(req, metadata=self._metadata)
 
+  def stop(self):
+    req = rx_pb2.StopRequest(
+      workspace_id=self._remote_cfg.workspace_id, save=True)
+    def get_progress(
+        resp: Iterable[rx_pb2.StopResponse]
+    ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
+      for r in resp:
+        yield r.push_progress
+    resp = self._stub.Stop(req, metadata=self._metadata)
+    result = show_progress_bars(get_progress(resp))
+    if result and result.code != 0:
+      raise WorkerError('Error stopping worker', result)
+
   def _install_deps(self):
     req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)
     resp = None
@@ -146,9 +147,9 @@ class Client:
           sys.stdout.buffer.flush()
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
-      raise InitError(e.details(), -1)
+      raise WorkerError(e.details(), result=None)
     if resp and resp.HasField('result') and resp.result.code:
-      raise InitError(resp.result.message, resp.result.code)
+      raise WorkerError(message=None, result=resp.result)
 
 
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
@@ -161,9 +162,28 @@ def is_subdir(*, parent: str, child: str) -> bool:
   return os.path.commonpath([parent]) == os.path.commonpath([parent, child])
 
 
+def show_progress_bars(
+    it: Iterable[rx_pb2.DockerImageProgress]) -> Optional[rx_pb2.Result]:
+  progress_bars = {}
+  try:
+    for pp in it:
+      if pp.id not in progress_bars:
+        # First item must have a total.
+        if pp.total == 0:
+          continue
+        progress_bars[pp.id] = ProgressBar(pp)
+      progress_bars[pp.id].update(pp)
+  except grpc.RpcError as e:
+    e = cast(grpc.Call, e)
+    return rx_pb2.Result(code=rx_pb2.UNKNOWN, message=e.details())
+  finally:
+    for p in progress_bars.values():
+      p.close()
+
+
 class ProgressBar:
 
-  def __init__(self, pp: rx_pb2.DockerImagePullProgress) -> None:
+  def __init__(self, pp: rx_pb2.DockerImageProgress) -> None:
     assert pp.total > 0
     self._bar = tqdm.tqdm(
       desc=f'{pp.status} layer {pp.id}',
@@ -174,7 +194,7 @@ class ProgressBar:
   def close(self):
     self._bar.close()
 
-  def update(self, pp: rx_pb2.DockerImagePullProgress):
+  def update(self, pp: rx_pb2.DockerImageProgress):
     if pp.total == 0:
       self._bar.set_description(f'{pp.status} layer {pp.id}')
       return
@@ -187,12 +207,24 @@ class ProgressBar:
       self._is_done = True
 
 
-# TODO: this needs to take code.
-class InitError(RuntimeError):
-  pass
+class WorkerError(RuntimeError):
+  def __init__(
+      self,
+      message: Optional[str],
+      result: Optional[rx_pb2.Result],
+      *args: object):
+    """Allow passing message, result, or both."""
+    full_message = message
+    if message is not None and result is not None:
+      full_message = f'{message}: {result.message}'
+    elif result is not None:
+      full_message = result.message
+    super().__init__(full_message, *args)
+    self.code = result.code if result is not None else -1
+
 
 class UnreachableError(RuntimeError):
-  def __init__(self, worker_addr: str, code: int, *args: object) -> None:
+  def __init__(self, worker_addr: str, code: int, *args: object):
     super().__init__(*args)
     self.worker = worker_addr
     self.code = code

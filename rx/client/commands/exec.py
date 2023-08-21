@@ -65,6 +65,9 @@ class ExecCommand(command.Command):
         f'Worker {e.worker} was unrechable, run `rx init` to get a new '
         'instance.')
       return e.code
+    except worker_client.WorkerError as e:
+      print(e)
+      return e.code
 
 
 class VersionCommand:

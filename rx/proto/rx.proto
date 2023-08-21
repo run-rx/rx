@@ -43,7 +43,7 @@ message Delta {
   repeated string remove_path = 3;
 }
 
-message DockerImagePullProgress {
+message DockerImageProgress {
   string id = 1;
   string status = 2;
   int32 total = 3;
@@ -133,10 +133,12 @@ message SetUsernameResponse {
 
 message StopRequest {
   string workspace_id = 1;
+  bool save = 2;
 }
 
 message StopResponse {
   Result result = 1;
+  DockerImageProgress push_progress = 2;
 }
 
 message WorkerInitRequest {
@@ -145,7 +147,7 @@ message WorkerInitRequest {
 
 message WorkerInitResponse {
   Result result = 1;
-  DockerImagePullProgress pull_progress = 2;
+  DockerImageProgress pull_progress = 2;
 }
 
 service ExecutionService {
@@ -153,11 +155,11 @@ service ExecutionService {
   rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(stream ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
+  rpc Stop(StopRequest) returns (stream StopResponse) {}
 }
 
 service SetupService {
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}
-  rpc Stop(StopRequest) returns (StopResponse) {}
 }
