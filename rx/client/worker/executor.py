@@ -45,15 +45,15 @@ class Executor:
 class StdinIterator:
 
   def __init__(self, request: rx_pb2.ExecRequest) -> None:
-    self._initial_request = request
     self._running = True
     self._stdin_buffer = [request]
     self._stdin_avail = threading.Condition()
+    self._original_flags = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
     self._original_attrs = termios.tcgetattr(sys.stdin)
+    self._selector = selectors.DefaultSelector()
 
   def __enter__(self) -> 'StdinIterator':
-    orig_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
-    fcntl.fcntl(sys.stdin, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
+    fcntl.fcntl(sys.stdin, fcntl.F_SETFL, self._original_flags | os.O_NONBLOCK)
     th = threading.Thread(target=self.loop, daemon=True)
     th.start()
     return self
@@ -61,7 +61,9 @@ class StdinIterator:
   def __exit__(self, exctype: Optional[Type[BaseException]],
              excinst: Optional[BaseException],
              exctb: Optional[TracebackType]):
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self._original_attrs)
+    self._selector.unregister(sys.stdin)
+    termios.tcsetattr(sys.stdin, termios.TCSANOW, self._original_attrs)
+    fcntl.fcntl(sys.stdin, fcntl.F_SETFL, self._original_flags)
     self._running = False
     return False
 
@@ -79,12 +81,10 @@ class StdinIterator:
   def loop(self):
     # Prevent echo of characters.
     tty.setcbreak(sys.stdin)
-
-    sel = selectors.DefaultSelector()
-    sel.register(sys.stdin, selectors.EVENT_READ, self.got_stdin)
+    self._selector.register(sys.stdin, selectors.EVENT_READ, self.got_stdin)
 
     while self._running:
-      events = sel.select(timeout=0)
+      events = self._selector.select(timeout=0)
       for key, mask in events:
         del mask
         key.data()
