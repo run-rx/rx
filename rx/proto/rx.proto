@@ -56,6 +56,7 @@ enum StatusCode {
   INVALID = 2;
   NOT_FOUND = 3;
   UNAUTHORIZED = 4;
+  SUBSCRIPTION_REQUIRED = 5;
 }
 
 message Result {

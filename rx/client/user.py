@@ -19,9 +19,13 @@ class CreateUser(config_base.ReadWriteConfig):
 
 class User(config_base.ReadOnlyConfig):
   """User info."""
-  def __init__(self, cwd: pathlib.Path, email: str):
+  def __init__(
+      self,
+      cwd: pathlib.Path,
+      email: Optional[str] = None,
+      strict: bool = True):
     super().__init__(_get_user_config(cwd))
-    if email != self['email']:
+    if strict and email != self['email']:
       raise RuntimeError(f'Mismatched emails: {email} vs. {self["email"]}')
 
 

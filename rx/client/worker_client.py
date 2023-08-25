@@ -9,6 +9,7 @@ import grpc
 
 from rx.client import login
 from rx.client import output_handler
+from rx.client import payment
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.client.worker import executor
@@ -106,6 +107,9 @@ class Client:
 
     if (response is not None and response.HasField('result') and
         response.result.code != 0):
+      if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
+        payment.request_subscription(self._local_cfg.cwd)
+        return 0
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
     return 0

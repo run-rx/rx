@@ -12,7 +12,6 @@ To run a command on the remote host:
 
 Run 'rx --help' for more options or visit https://www.run-rx.com.
 """
-import pathlib
 import tempfile
 from typing import List
 
@@ -26,7 +25,6 @@ from rx.client.commands import init
 from rx.client.commands import stop
 from rx.client.configuration import config_base
 from rx.client.configuration import local
-from rx.client.configuration import remote
 
 
 class ExecCommand(command.Command):

@@ -7,6 +7,7 @@ import grpc
 
 from rx.client import grpc_helper
 from rx.client import login
+from rx.client import payment
 from rx.client import user
 from rx.client import worker_client
 from rx.client.configuration import local
@@ -77,6 +78,9 @@ class Client:
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
+      if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
+        payment.request_subscription(self._local_cfg.cwd)
+        return 0
       raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
 
