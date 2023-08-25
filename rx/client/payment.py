@@ -24,9 +24,11 @@ Sorry to hear that! Please let us know if you have any feedback or suggestions
 at eng@run-rx.com. Thanks for trying it out!""")
     return False
 
-  browser.open_browser(f'https://run-rx.com/pricing?user={u["username"]}')
+  url = f'https://run-rx.com/pricing?user={u["username"]}'
+  print(f'Opening {url} in your browser...')
+  browser.open_browser(url)
 
   print("""
-Thank you! It may take a few minutes for your payment to be processed, but then
-your subscription will be activated.""")
+Thank you! Your subscription will be activated as soon as your payment is
+processed (that may take a few minutes).""")
   return True
