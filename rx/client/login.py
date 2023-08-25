@@ -21,7 +21,6 @@ import http.cookies
 import http.server
 import json
 import pathlib
-import platform
 import subprocess
 import threading
 import time
@@ -34,16 +33,13 @@ import jwt
 import requests
 from requests import exceptions
 
+from rx.client import browser
 from rx.client.configuration import config_base
 
 _DO_AUTH = flags.DEFINE_bool(
   'do_auth', True, 'Skip auth for offline development')
 _AUTH_EMAIL = flags.DEFINE_string(
   'auth_email', None, 'Email to use for offline development')
-
-_DARWIN = 'Darwin'
-_LINUX = 'Linux'
-_WINDOWS = 'Windows'
 
 # From https://console.developers.google.com/apis/credentials
 _CLIENT_ID = '909912915303-enmim0gms3hfsdv7c9m6p79vovjkf4vd.apps.googleusercontent.com'
@@ -135,29 +131,15 @@ class LoginManager:
     while self._server is None:
       time.sleep(1)
     url = self._create_login_url()
-    system = platform.system()
-    if system == _DARWIN:
-      cmd = ['open', url]
-    elif system == _LINUX:
-      cmd = ['xdg-open', url]
-    elif system == _WINDOWS:
-      logging.info(
-          'I can\'t imagine this is going to work on Windows, but feel free to '
-          'give it a try and report back')
-      cmd = ['cmd', '/c', 'start', url.replace('&', '^&')]
-    else:
-      raise RuntimeError(f'Unsupported system: {system}')
     try:
-      subprocess.run(cmd, check=True, capture_output=True)
+      browser.open_browser(url)
     except subprocess.CalledProcessError as e:
-      if e.stdout:
-        print(e.stdout)
       self._server.shutdown()
       raise AuthError(f'Error opening browser: {e}')
     except FileNotFoundError as e:
       self._server.shutdown()
       raise AuthError(
-        f'Could not find browser-opening program {cmd[0]}, are you in an SSH '
+        f'Could not find browser-opening program, are you in an SSH '
         'session?')
 
   def refresh_access_token(self):
