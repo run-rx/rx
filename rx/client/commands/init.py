@@ -115,11 +115,7 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
-    except worker_client.UnreachableError as e:
-      print(
-        f'Worker {e.worker} was unrechable, run `rx init` to get a new '
-        'instance.')
-      return e.code
+
 
 if __name__ == '__main__':
   print('Call exec.')

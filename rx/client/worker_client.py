@@ -59,7 +59,7 @@ class Client:
     # Sync sources.
     result = self._rsync.to_remote()
     if result != 0:
-      raise UnreachableError(self._remote_cfg.worker_addr, result)
+      raise UnreachableError()
 
     # Install deps.
     self._install_deps()
@@ -70,7 +70,7 @@ class Client:
 
     result = self._rsync.to_remote()
     if result != 0:
-      raise UnreachableError(self._remote_cfg.worker_addr, result)
+      raise UnreachableError()
 
     rxroot = os.path.abspath(self._local_cfg.cwd)
     cwd = os.path.abspath(pathlib.Path.cwd())
@@ -181,8 +181,6 @@ class WorkerError(RuntimeError):
     self.code = result.code if result is not None else -1
 
 
-class UnreachableError(RuntimeError):
-  def __init__(self, worker_addr: str, code: int, *args: object):
-    super().__init__(*args)
-    self.worker = worker_addr
-    self.code = code
+class UnreachableError(WorkerError):
+  def __init__(self, *args: object):
+    super().__init__('unreachable', None, *args)

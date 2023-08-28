@@ -59,9 +59,7 @@ class ExecCommand(command.Command):
       client.maybe_kill()
       return worker_client.SIGINT_CODE
     except worker_client.UnreachableError as e:
-      print(
-        f'Worker {e.worker} was unrechable, run `rx init` to get a new '
-        'instance.')
+      print('Worker was unrechable, run `rx init` to get a new instance.')
       return e.code
     except worker_client.WorkerError as e:
       print(e)

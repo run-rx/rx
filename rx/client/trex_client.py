@@ -92,12 +92,15 @@ class Client:
     # Create a container on the worker.
     sys.stdout.write('Setting up the container... ')
     sys.stdout.flush()
-    with grpc_helper.get_channel(resp.worker_addr) as ch:
-      worker = worker_client.create_authed_client(ch, self._local_cfg)
-      worker.init()
-    sys.stdout.write('Done.\n')
-    print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
-    return 0
+    try:
+      with grpc_helper.get_channel(resp.worker_addr) as ch:
+        worker = worker_client.create_authed_client(ch, self._local_cfg)
+        worker.init()
+      sys.stdout.write('Done.\n')
+      print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
+      return 0
+    except worker_client.WorkerError as e:
+      raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
 
   def _create_username(self, email: str) -> str:
     username = user.username_prompt(email)
