@@ -25,7 +25,7 @@ at eng@run-rx.com. Thanks for trying it out!""")
     return False
 
   url = f'https://run-rx.com/pricing?user={u["username"]}'
-  print(f'Opening {url} in your browser...')
+  print(f'Opening your browser. Or, you can manually visit:\n\n\t{url}\n')
   browser.open_browser(url)
 
   print("""
