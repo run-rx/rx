@@ -49,20 +49,12 @@ class InitCommand(command.Command):
     else:
       message = 'To set up rx, this command will:\n\n'
     if not self._user_info_exists:
-      steps.append(
-        'Create an account for you with rx (or log you into your existing '
-        'account).')
-    steps.append('Set up a virtual machine on the cloud (on AWS).')
-    steps.append(
-      f'Copy over the files in this directory ({self._rxroot}) to your\n'
-      '   virtual machine.')
+      steps.append('Create your rx account (or log in).')
+    steps.append('Set up a virtual machine on AWS.')
+    steps.append(f'Copy the files in {self._rxroot} to your virtual machine.')
     for num, step in enumerate(steps, 1):
       message += f'{num}. {step}\n'
-    if not self._user_info_exists:
-      message += (
-        '\nWould you like to proceed with logging in/creating an rx account?')
-    else:
-      message += ('\nWould you like to proceed?')
+    message += ('\nWould you like to continue?')
     if not menu.bool_prompt(message, 'y'):
       print('Okay, goodbye!')
       sys.exit(0)
