@@ -16,7 +16,7 @@ import sty
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.11'
+VERSION = '0.0.12'
 
 IGNORE = pathlib.Path('.rxignore')
 
