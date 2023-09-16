@@ -1,5 +1,6 @@
 import pathlib
 import sys
+from typing import Optional
 
 from absl import flags
 from absl import logging
@@ -7,15 +8,16 @@ from absl import logging
 from rx.client import grpc_helper
 from rx.client import login
 from rx.client import menu
+from rx.client import payment
 from rx.client import trex_client
-from rx.client import worker_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
 _DRY_RUN = flags.DEFINE_bool(
   'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
-
+_SUBSCRIBE = flags.DEFINE_bool(
+  'subscribe', False, 'Trigger subscription flow and exit.')
 
 class InitCommand(command.Command):
   """Initialize (or reinitialize) the remote."""
@@ -59,33 +61,42 @@ class InitCommand(command.Command):
       print('Okay, goodbye!')
       sys.exit(0)
 
+  def _set_up_user(
+      self, client: trex_client.Client) -> Optional[str]:
+    """Returns a prefix string for the next setup step, or None if done."""
+    if not self._user_info_exists:
+      ready_to_login = menu.bool_prompt(
+        f"""
+Great! First rx will need to open a browser window for you to log in. rx uses
+Google's oauth to associate your email with your rx account.
+
+Press y to continue:""", 'y')
+      if not ready_to_login:
+        print('Okay, goodbye!')
+        return None
+    client.create_user_or_log_in()
+
+    if _SUBSCRIBE.value:
+      payment.request_subscription(self._rxroot, force=False)
+      return None
+    return 'Next,' if self._user_info_exists else 'Great! First'
+
   def run(self) -> int:
     self._show_init_message()
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')
+    config = local.create_local_config(self._rxroot)
     try:
-      config = local.create_local_config(self._rxroot)
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)
         if _DRY_RUN.value:
           client.dry_run()
           return 0
-        if not self._user_info_exists:
-          ready_to_login = menu.bool_prompt(
-            f"""
-Great! First rx will need to open a browser window for you to log in. rx uses
-Google's oauth to associate your email with your rx account.
 
-Press y to continue:""", 'y')
-          if not ready_to_login:
-            print('Okay, goodbye!')
-            return 0
-        client.create_user_or_log_in()
+        prefix = self._set_up_user(client)
+        if prefix is None:
+          return 0
 
-        if not self._user_info_exists:
-          prefix = 'Next,'
-        else:
-          prefix = 'Great! First'
         ready_to_upload = menu.bool_prompt(
           f"""
 {prefix} rx is going to start a virtual machine in the cloud for your user.
