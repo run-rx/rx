@@ -8,7 +8,6 @@ from absl import logging
 from rx.client import grpc_helper
 from rx.client import login
 from rx.client import menu
-from rx.client import payment
 from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
@@ -16,8 +15,7 @@ from rx.client.configuration import local
 
 _DRY_RUN = flags.DEFINE_bool(
   'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
-_SUBSCRIBE = flags.DEFINE_bool(
-  'subscribe', False, 'Trigger subscription flow and exit.')
+
 
 class InitCommand(command.Command):
   """Initialize (or reinitialize) the remote."""
@@ -75,10 +73,6 @@ Press y to continue:""", 'y')
         print('Okay, goodbye!')
         return None
     client.create_user_or_log_in()
-
-    if _SUBSCRIBE.value:
-      payment.request_subscription(self._rxroot, force=False)
-      return None
     return 'Next,' if self._user_info_exists else 'Great! First'
 
   def run(self) -> int:

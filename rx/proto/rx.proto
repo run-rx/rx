@@ -59,9 +59,16 @@ enum StatusCode {
   SUBSCRIPTION_REQUIRED = 5;
 }
 
+message SubscribeInfo {
+  string payment_link = 1;
+  bool needs_metered = 2;
+}
+
 message Result {
   StatusCode code = 1;
   string message = 2;
+  // Only present if code == SUBSCRIPTION_REQUIRED
+  SubscribeInfo subscription_info = 3;
 }
 
 message RsyncSource {

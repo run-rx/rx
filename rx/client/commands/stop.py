@@ -1,9 +1,16 @@
 import sys
 
+from absl import flags
+
 from rx.client import grpc_helper
 from rx.client import worker_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
+
+# TODO: implement unsubscribe.
+_UNSUBSCRIBE = flags.DEFINE_bool(
+  'unsubscribe', False, 'Stop all machines and halt rx subscription.')
+
 
 class StopCommand(command.Command):
   """Initialize (or reinitialize) the remote."""

@@ -108,7 +108,8 @@ class Client:
     if (response is not None and response.HasField('result') and
         response.result.code != 0):
       if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        payment.request_subscription(self._local_cfg.cwd)
+        payment.request_subscription(
+          self._local_cfg.cwd, response.result.subscription_info)
         return 0
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code

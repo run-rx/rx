@@ -79,7 +79,8 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        payment.request_subscription(self._local_cfg.cwd)
+        payment.request_subscription(
+          self._local_cfg.cwd, resp.result.subscription_info)
         return 0
       raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
