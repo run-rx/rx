@@ -108,6 +108,7 @@ message InitRequest {
   string project_name = 1;
   RsyncSource rsync_source = 2;
   Environment target_env = 3;
+  bool force_subscribe = 4;
 }
 
 message InitResponse {
@@ -142,6 +143,7 @@ message SetUsernameResponse {
 message StopRequest {
   string workspace_id = 1;
   bool save = 2;
+  bool unsubscribe = 3;
 }
 
 message StopResponse {

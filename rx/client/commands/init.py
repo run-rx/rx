@@ -13,6 +13,8 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
+_SUBSCRIBE = flags.DEFINE_bool(
+  'subscribe', False, 'Force the subscription flow.')
 _DRY_RUN = flags.DEFINE_bool(
   'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
 
@@ -36,6 +38,13 @@ class InitCommand(command.Command):
     return self._rxroot
 
   def _show_init_message(self):
+    underline = '=' * len(str(self._rxroot))
+    print(f"""
+
+Creating a workspace for {self._rxroot}
+========================={underline}
+"""
+)
     steps = []
     if self._config_exists:
       reinit = menu.bool_prompt(
@@ -44,10 +53,10 @@ class InitCommand(command.Command):
       if not reinit:
         print('Okay, goodbye!')
         sys.exit(0)
-      message = 'Got it. To re-init this workspace, rx will:\n\n'
+      message = '\nGot it. To re-init this workspace, rx will:\n\n'
       steps.append('Shut down your existing virtual machine.')
     else:
-      message = 'To set up rx, this command will:\n\n'
+      message = '\nTo set up rx, this command will:\n\n'
     if not self._user_info_exists:
       steps.append('Create your rx account (or log in).')
     steps.append('Set up a virtual machine on AWS.')
@@ -60,8 +69,8 @@ class InitCommand(command.Command):
       sys.exit(0)
 
   def _set_up_user(
-      self, client: trex_client.Client) -> Optional[str]:
-    """Returns a prefix string for the next setup step, or None if done."""
+      self, client: trex_client.Client) -> bool:
+    """Returns whether to continue."""
     if not self._user_info_exists:
       ready_to_login = menu.bool_prompt(
         f"""
@@ -71,9 +80,9 @@ Google's oauth to associate your email with your rx account.
 Press y to continue:""", 'y')
       if not ready_to_login:
         print('Okay, goodbye!')
-        return None
+        return False
     client.create_user_or_log_in()
-    return 'Next,' if self._user_info_exists else 'Great! First'
+    return True
 
   def run(self) -> int:
     self._show_init_message()
@@ -87,17 +96,19 @@ Press y to continue:""", 'y')
           client.dry_run()
           return 0
 
-        prefix = self._set_up_user(client)
-        if prefix is None:
+        cont = self._set_up_user(client)
+        if not cont:
           return 0
 
         ready_to_upload = menu.bool_prompt(
           f"""
-{prefix} rx is going to start a virtual machine in the cloud for your user.
-This is your private machine and is currently free of charge (though limited in
-resources).
+Upload your code
+================
 
-The source code in this directory, will be copied to your virtual machine. To
+Great! First rx is going to start a virtual machine in the cloud for your user.
+This is your private machine and its state will be saved between commands.
+
+The source code in this directory will be copied to your virtual machine. To
 check what will be uploaded, you can rerun this command with --dry-run and
 modify .rxignore to exclude anything you don't want copied.
 
@@ -107,7 +118,7 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
           return 0
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
-        return client.init()
+        return client.init(_SUBSCRIBE.value)
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()

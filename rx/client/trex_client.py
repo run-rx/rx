@@ -58,7 +58,7 @@ class Client:
   def dry_run(self):
     rsync.dry_run(self._local_cfg)
 
-  def init(self) -> int:
+  def init(self, force_subscribe: bool = True) -> int:
     try:
       target_env = self._local_cfg.get_target_env()
     except local.ConfigError as e:
@@ -67,6 +67,7 @@ class Client:
       project_name=self._local_cfg['project_name'],
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
+      force_subscribe=force_subscribe,
     )
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
