@@ -1,5 +1,5 @@
 import sys
-from typing import cast, Optional, Tuple
+from typing import cast, Generator, Iterable, Optional, Tuple
 
 from absl import logging
 from google.protobuf import empty_pb2
@@ -12,6 +12,7 @@ from rx.client import user
 from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
+from rx.client.worker import progress_bar
 from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
@@ -103,6 +104,25 @@ class Client:
       return 0
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
+
+  def stop(self, workspace_id: str, unsubscribe: bool = True):
+    req = rx_pb2.StopRequest(
+      workspace_id=workspace_id,
+      save=False if unsubscribe else True,
+      unsubscribe=unsubscribe)
+    def get_progress(
+        resp: Iterable[rx_pb2.StopResponse]
+    ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
+      for r in resp:
+        yield r.push_progress
+    resp = self._stub.Stop(req, metadata=self._metadata)
+    result = progress_bar.show_progress_bars(get_progress(resp))
+    if result:
+      if result.code != 0:
+        raise TrexError('Error stopping worker', result)
+      # Unsubscribe might have sent along a message.
+      if resp.message:
+        print(resp.message)
 
   def _create_username(self, email: str) -> str:
     username = user.username_prompt(email)

@@ -127,19 +127,6 @@ class Client:
     )
     self._stub.Kill(req, metadata=self._metadata)
 
-  def stop(self):
-    req = rx_pb2.StopRequest(
-      workspace_id=self._remote_cfg.workspace_id, save=True)
-    def get_progress(
-        resp: Iterable[rx_pb2.StopResponse]
-    ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
-      for r in resp:
-        yield r.push_progress
-    resp = self._stub.Stop(req, metadata=self._metadata)
-    result = progress_bar.show_progress_bars(get_progress(resp))
-    if result and result.code != 0:
-      raise WorkerError('Error stopping worker', result)
-
   def _install_deps(self):
     req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)
     resp = None

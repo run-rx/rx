@@ -3,11 +3,10 @@ import sys
 from absl import flags
 
 from rx.client import grpc_helper
-from rx.client import worker_client
+from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 
-# TODO: implement unsubscribe.
 _UNSUBSCRIBE = flags.DEFINE_bool(
   'unsubscribe', False, 'Stop all machines and halt rx subscription.')
 
@@ -17,14 +16,15 @@ class StopCommand(command.Command):
 
   def run(self) -> int:
     try:
-      with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:
-        client = worker_client.create_authed_client(ch, self.local_config)
-        client.stop()
+      with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+        client = trex_client.create_authed_client(ch, self.local_config)
+        client.stop(
+          self.remote_config.workspace_id, unsubscribe=_UNSUBSCRIBE.value)
     except config_base.ConfigNotFoundError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return -1
-    except worker_client.WorkerError as e:
+    except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
