@@ -40,9 +40,8 @@ class InitCommand(command.Command):
   def _show_init_message(self):
     underline = '=' * len(str(self._rxroot))
     print(f"""
-
-Creating a workspace for {self._rxroot}
-========================={underline}
+rx setup for {self._rxroot}
+============={underline}
 """
 )
     steps = []

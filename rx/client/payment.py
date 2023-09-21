@@ -42,7 +42,7 @@ def request_subscription(cwd: pathlib.Path, sub: rx_pb2.SubscribeInfo) -> bool:
 Create a subscription
 =====================
 {_GPU if sub.needs_metered else _CPU}
-Would you like to subscribe? (This will open a browser window to collect payment
+Would you like to continue? (This will open a browser window to collect payment
 infomation.)""", 'y')
 
   if not pay:
@@ -55,7 +55,7 @@ feedback or suggestions.""")
   if not url:
     print(f'No url found for {sub}, visit https://run-rx.com/pricing to sign up.')
     return True
-  print(f'Opening your browser. Or, you can manually visit:\n\n\t{url}\n')
+  print(f'Opening your browser. Or, you can manually visit:\n\n{url}\n')
   browser.open_browser(url)
 
   print("""
