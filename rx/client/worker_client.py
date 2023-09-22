@@ -7,12 +7,8 @@ from absl import flags
 from absl import logging
 import grpc
 
-from rx.client import grpc_helper
 from rx.client import login
 from rx.client import output_handler
-from rx.client import payment
-from rx.client import trex_client
-from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.client.worker import executor
@@ -111,7 +107,10 @@ class Client:
     if (response is not None and response.HasField('result') and
         response.result.code != 0):
       if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        self._handle_payment(response.result.subscription_info)
+        print("""
+You need a subscription to continue to use compute!
+
+Please run `rx subscribe` to continue.""")
         return 0
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
@@ -128,19 +127,6 @@ class Client:
       execution_id=self._current_execution_id,
     )
     self._stub.Kill(req, metadata=self._metadata)
-
-  def _handle_payment(self, subscription: rx_pb2.SubscribeInfo):
-    wait_for_payment = payment.request_subscription(
-      self._local_cfg.cwd, subscription)
-    if not wait_for_payment:
-      return
-
-    # Create a trex client.
-    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-      trex_stub = trex_client.create_authed_client(ch, self._local_cfg)
-      trex_stub.wait_for_payment()
-    # Retry this command.
-    raise grpc_helper.RetryError()
 
   def _install_deps(self):
     req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)

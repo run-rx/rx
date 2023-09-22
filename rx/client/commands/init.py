@@ -122,10 +122,6 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
         except grpc_helper.RetryError as e:
           # TODO: exit out if second_try is already true.
           sys.stderr.write("""
-
-🦖 Subscription activated! Welcome to rx! 🦖
-==========================================
-
 Retrying init...
 """)
           sys.stderr.flush()

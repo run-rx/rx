@@ -23,6 +23,7 @@ from rx.client import grpc_helper
 from rx.client.commands import command
 from rx.client.commands import init
 from rx.client.commands import stop
+from rx.client.commands import subscribe
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
@@ -90,6 +91,10 @@ def main(argv):
       cmd = init.InitCommand()
     elif cmd_to_run == 'stop':
       cmd = stop.StopCommand()
+    elif cmd_to_run == 'subscribe':
+      cmd = subscribe.SubscribeCommand()
+    elif cmd_to_run == 'unsubscribe':
+      cmd = subscribe.UnsubscribeCommand()
     elif cmd_to_run == 'version':
       cmd = VersionCommand()
     else:

@@ -85,7 +85,9 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        return self._handle_subscription(resp.result.subscription_info)
+        if self.subscribe():
+          # Retry init.
+          raise grpc_helper.RetryError()
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
@@ -108,11 +110,18 @@ class Client:
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
 
-  def stop(self, workspace_id: str, unsubscribe: bool = True):
-    req = rx_pb2.StopRequest(
-      workspace_id=workspace_id,
-      save=False if unsubscribe else True,
-      unsubscribe=unsubscribe)
+  def subscribe(self) -> bool:
+    if not payment.explain_subscription(self._local_cfg.cwd):
+      return False
+    # Get the link for payment.
+    req = empty_pb2.Empty()
+    response = self._stub.GetSubscribeInfo(req, metadata=self._metadata)
+    payment.open_browser(response.subscribe_info)
+    self._wait_for_payment()
+    return True
+
+  def stop(self, workspace_id: str):
+    req = rx_pb2.StopRequest(workspace_id=workspace_id, save=True)
     def get_progress(
         resp: Iterable[rx_pb2.StopResponse]
     ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
@@ -120,14 +129,16 @@ class Client:
         yield r.push_progress
     resp = self._stub.Stop(req, metadata=self._metadata)
     result = progress_bar.show_progress_bars(get_progress(resp))
-    if result:
-      if result.code != 0:
-        raise TrexError('Error stopping worker', result)
-      # Unsubscribe might have sent along a message.
-      if resp.message:
-        print(resp.message)
+    if result and result.code != 0:
+      raise TrexError('Error stopping worker', result)
 
-  def wait_for_payment(self):
+  def unsubscribe(self):
+    req = empty_pb2.Empty()
+    response = self._stub.Unsubscribe(req, metadata=self._metadata)
+    if response.result.code != rx_pb2.OK:
+      raise TrexError(response.result.message, response.result.code)
+
+  def _wait_for_payment(self):
     end = datetime.datetime.now() + _PAYMENT_TIMEOUT
     sys.stdout.write('Waiting for subscription to be activated...')
     while datetime.datetime.now() < end:
@@ -136,6 +147,7 @@ class Client:
       response = self._stub.CheckSubscription(
         empty_pb2.Empty(), metadata=self._metadata)
       if response.result.code == rx_pb2.OK:
+        payment.success()
         return
       if response.result.code != rx_pb2.SUBSCRIPTION_REQUIRED:
         # Something else went wrong.
@@ -143,7 +155,7 @@ class Client:
       # Otherwise, we're just waiting for them to finish subscribing.
       time.sleep(_SLEEP_SECS)
     raise TimeoutError(
-      'Timed out waiting for subscription to activate. Please run `rx init` '
+      'Timed out waiting for subscription to activate. Please run the command '
       'again after subscribing.')
 
   def _create_username(self, email: str) -> str:
@@ -177,16 +189,6 @@ class Client:
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
-
-  def _handle_subscription(
-      self, subscription_info: rx_pb2.SubscribeInfo) -> int:
-    wait_for_payment = payment.request_subscription(
-      self._local_cfg.cwd, subscription_info)
-    if wait_for_payment:
-      self.wait_for_payment()
-      # Retry this command.
-      raise grpc_helper.RetryError()
-    return 0
 
   def _run_initial_rsync(self, remote_cfg: remote.Remote):
     r = rsync.RsyncClient(self._local_cfg, remote_cfg)

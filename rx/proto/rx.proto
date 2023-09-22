@@ -61,14 +61,11 @@ enum StatusCode {
 
 message SubscribeInfo {
   string payment_link = 1;
-  bool needs_metered = 2;
 }
 
 message Result {
   StatusCode code = 1;
   string message = 2;
-  // Only present if code == SUBSCRIPTION_REQUIRED
-  SubscribeInfo subscription_info = 3;
 }
 
 message RsyncSource {
@@ -83,7 +80,9 @@ message RsyncDestination {
 
 // Requests and responses
 
-message CheckSubscriptionResponse {
+// This just wraps Result in case an RPC wants to return more fields in the
+// future.
+message GenericResponse {
   Result result = 1;
 }
 
@@ -101,6 +100,11 @@ message ExecResponse {
   bytes stdout = 3;
   bytes stderr = 4;
   repeated string output_files = 5;
+}
+
+message GetSubscribeInfoResponse {
+  Result result = 1;
+  SubscribeInfo subscribe_info = 2;
 }
 
 message GetUserResponse {
@@ -140,14 +144,9 @@ message SetUsernameRequest {
   string username = 1;
 }
 
-message SetUsernameResponse {
-  Result result = 1;
-}
-
 message StopRequest {
   string workspace_id = 1;
   bool save = 2;
-  bool unsubscribe = 3;
 }
 
 message StopResponse {
@@ -172,9 +171,12 @@ service ExecutionService {
 }
 
 service SetupService {
-  rpc CheckSubscription(google.protobuf.Empty) returns (CheckSubscriptionResponse) {}
+  rpc CheckSubscription(google.protobuf.Empty) returns (GenericResponse) {}
+  rpc GetSubscribeInfo(google.protobuf.Empty)
+    returns (GetSubscribeInfoResponse) {}
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
-  rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}
+  rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}
+  rpc Unsubscribe(google.protobuf.Empty) returns (GenericResponse) {}
 }
