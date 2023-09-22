@@ -112,6 +112,15 @@ message GetUserResponse {
   string username = 2;
 }
 
+message GetWorkspaceInfoRequest {
+  string workspace_id = 2;
+}
+
+message GetWorkspaceInfoResponse {
+  Result result = 1;
+  bool has_gpu = 2;
+}
+
 message InitRequest {
   string project_name = 1;
   RsyncSource rsync_source = 2;
@@ -175,6 +184,8 @@ service SetupService {
   rpc GetSubscribeInfo(google.protobuf.Empty)
     returns (GetSubscribeInfoResponse) {}
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
+  rpc GetWorkspaceInfo(GetWorkspaceInfoRequest)
+    returns (GetWorkspaceInfoResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}

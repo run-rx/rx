@@ -63,6 +63,13 @@ class Client:
   def dry_run(self):
     rsync.dry_run(self._local_cfg)
 
+  def get_info(self, workspace_id: str) -> rx_pb2.GetWorkspaceInfoResponse:
+    request = rx_pb2.GetWorkspaceInfoRequest(workspace_id=workspace_id)
+    response = self._stub.GetWorkspaceInfo(request, metadata=self._metadata)
+    if response.result.code != rx_pb2.OK:
+      raise TrexError(response.result.message, response.result.code)
+    return response
+
   def init(self, force_subscribe: bool = False) -> int:
     try:
       target_env = self._local_cfg.get_target_env()

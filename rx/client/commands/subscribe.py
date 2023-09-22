@@ -22,7 +22,7 @@ class SubscribeCommand(command.Command):
 
 
 class UnsubscribeCommand(command.Command):
-  """Create a subscription."""
+  """Cancel a subscription."""
 
   def run(self) -> int:
     try:

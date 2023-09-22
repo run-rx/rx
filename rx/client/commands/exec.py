@@ -10,7 +10,7 @@ To run a command on the remote host:
 
     rx CMD
 
-Run 'rx --help' for more options or visit https://www.run-rx.com.
+Run 'rx --help' for more options or visit https://docs.run-rx.com.
 """
 import tempfile
 from typing import List
@@ -24,6 +24,7 @@ from rx.client.commands import command
 from rx.client.commands import init
 from rx.client.commands import stop
 from rx.client.commands import subscribe
+from rx.client.commands import workspace_info
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
@@ -97,6 +98,8 @@ def main(argv):
       cmd = subscribe.UnsubscribeCommand()
     elif cmd_to_run == 'version':
       cmd = VersionCommand()
+    elif cmd_to_run == 'workspace-info':
+      cmd = workspace_info.WorkspaceInfoCommand()
     else:
       if cmd_to_run == 'run':
         # "rx run foo" is generally the same as "rx foo", but the extra "run"
