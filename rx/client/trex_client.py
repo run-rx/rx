@@ -85,6 +85,7 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
+        print('Whoops, you\'ll need a subscription to continue!')
         if self.subscribe():
           # Retry init.
           raise grpc_helper.RetryError()
@@ -140,7 +141,7 @@ class Client:
 
   def _wait_for_payment(self):
     end = datetime.datetime.now() + _PAYMENT_TIMEOUT
-    sys.stdout.write('Waiting for subscription to be activated...')
+    sys.stdout.write('\nWaiting for subscription to be activated...')
     while datetime.datetime.now() < end:
       sys.stdout.write('.')
       sys.stdout.flush()

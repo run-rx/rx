@@ -55,7 +55,7 @@ def open_browser(sub: rx_pb2.SubscribeInfo):
     print(
       f'No url found for {sub}, visit https://run-rx.com/pricing to sign up.')
     return
-  print(f'Opening your browser. Or, you can manually visit:\n\n{url}\n')
+  print(f'Opening your browser. Or, you can manually visit:\n\n{url}')
   browser.open_browser(url)
 
   print("""
