@@ -1,4 +1,6 @@
+import datetime
 import sys
+import time
 from typing import cast, Generator, Iterable, Optional, Tuple
 
 from absl import logging
@@ -17,7 +19,9 @@ from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
-_TIMEOUT = 10
+_PAYMENT_TIMEOUT = datetime.timedelta(300)
+_RPC_TIMEOUT_SECS = seconds=10
+_SLEEP_SECS = 5
 
 class Client:
   """Handle contacting the remote server."""
@@ -59,7 +63,7 @@ class Client:
   def dry_run(self):
     rsync.dry_run(self._local_cfg)
 
-  def init(self, force_subscribe: bool = True) -> int:
+  def init(self, force_subscribe: bool = False) -> int:
     try:
       target_env = self._local_cfg.get_target_env()
     except local.ConfigError as e:
@@ -81,10 +85,9 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        payment.request_subscription(
-          self._local_cfg.cwd, resp.result.subscription_info)
-        return 0
-      raise TrexError(resp.result.message, -1)
+        return self._handle_subscription(resp.result.subscription_info)
+      else:
+        raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
 
     with remote.WritableRemote(self._local_cfg.cwd) as r:
@@ -124,12 +127,31 @@ class Client:
       if resp.message:
         print(resp.message)
 
+  def wait_for_payment(self):
+    end = datetime.datetime.now() + _PAYMENT_TIMEOUT
+    sys.stdout.write('Waiting for subscription to be activated...')
+    while datetime.datetime.now() < end:
+      sys.stdout.write('.')
+      sys.stdout.flush()
+      response = self._stub.CheckSubscription(
+        empty_pb2.Empty(), metadata=self._metadata)
+      if response.result.code == rx_pb2.OK:
+        return
+      if response.result.code != rx_pb2.SUBSCRIPTION_REQUIRED:
+        # Something else went wrong.
+        raise TrexError(response.result.message, response.result.code)
+      # Otherwise, we're just waiting for them to finish subscribing.
+      time.sleep(_SLEEP_SECS)
+    raise TimeoutError(
+      'Timed out waiting for subscription to activate. Please run `rx init` '
+      'again after subscribing.')
+
   def _create_username(self, email: str) -> str:
     username = user.username_prompt(email)
     req = rx_pb2.SetUsernameRequest(username=username)
     try:
       resp = self._stub.SetUsername(
-        req, metadata=self._metadata, timeout=_TIMEOUT)
+        req, metadata=self._metadata, timeout=_RPC_TIMEOUT_SECS)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not set username: {e.details()}', -1)
@@ -150,11 +172,21 @@ class Client:
   def _get_username_from_rx(self) -> str:
     try:
       resp = self._stub.GetUser(
-        empty_pb2.Empty(), metadata=self._metadata, timeout=_TIMEOUT)
+        empty_pb2.Empty(), metadata=self._metadata, timeout=_RPC_TIMEOUT_SECS)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
+
+  def _handle_subscription(
+      self, subscription_info: rx_pb2.SubscribeInfo) -> int:
+    wait_for_payment = payment.request_subscription(
+      self._local_cfg.cwd, subscription_info)
+    if wait_for_payment:
+      self.wait_for_payment()
+      # Retry this command.
+      raise grpc_helper.RetryError()
+    return 0
 
   def _run_initial_rsync(self, remote_cfg: remote.Remote):
     r = rsync.RsyncClient(self._local_cfg, remote_cfg)

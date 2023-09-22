@@ -83,6 +83,10 @@ message RsyncDestination {
 
 // Requests and responses
 
+message CheckSubscriptionResponse {
+  Result result = 1;
+}
+
 message ExecRequest {
   string workspace_id = 1;
   repeated string argv = 2;
@@ -168,6 +172,7 @@ service ExecutionService {
 }
 
 service SetupService {
+  rpc CheckSubscription(google.protobuf.Empty) returns (CheckSubscriptionResponse) {}
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {}

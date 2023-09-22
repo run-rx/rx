@@ -1,6 +1,5 @@
 import pathlib
 import sys
-from typing import Optional
 
 from absl import flags
 from absl import logging
@@ -73,8 +72,8 @@ rx setup for {self._rxroot}
     if not self._user_info_exists:
       ready_to_login = menu.bool_prompt(
         f"""
-Great! First rx will need to open a browser window for you to log in. rx uses
-Google's oauth to associate your email with your rx account.
+First rx will need to open a browser window for you to log in. rx uses Google's
+oauth to associate your email with your rx account.
 
 Press y to continue:""", 'y')
       if not ready_to_login:
@@ -88,6 +87,7 @@ Press y to continue:""", 'y')
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')
     config = local.create_local_config(self._rxroot)
+    client = None
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)
@@ -104,8 +104,8 @@ Press y to continue:""", 'y')
 Upload your code
 ================
 
-Great! First rx is going to start a virtual machine in the cloud for your user.
-This is your private machine and its state will be saved between commands.
+First rx is going to start a virtual machine in the cloud for your user. This is
+your private machine and its state will be saved between commands.
 
 The source code in this directory will be copied to your virtual machine. To
 check what will be uploaded, you can rerun this command with --dry-run and
@@ -117,7 +117,27 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
           return 0
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
-        return client.init(_SUBSCRIBE.value)
+        try:
+          return client.init(_SUBSCRIBE.value)
+        except grpc_helper.RetryError as e:
+          # TODO: exit out if second_try is already true.
+          sys.stderr.write("""
+
+🦖 Subscription activated! Welcome to rx! 🦖
+==========================================
+
+Retrying init...
+""")
+          sys.stderr.flush()
+          return self.second_try(client)
+    except trex_client.TrexError as e:
+      sys.stderr.write(f'{e}\n')
+      sys.stderr.flush()
+      return e.code
+
+  def second_try(self, client: trex_client.Client) -> int:
+    try:
+      return client.init()
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()

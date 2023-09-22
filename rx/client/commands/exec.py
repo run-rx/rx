@@ -64,6 +64,9 @@ class ExecCommand(command.Command):
     except worker_client.WorkerError as e:
       print(e)
       return e.code
+    except grpc_helper.RetryError:
+      print('Retrying command...')
+      return self._try_exec(client)
 
 
 class VersionCommand:

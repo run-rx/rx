@@ -61,6 +61,4 @@ feedback or suggestions.""")
   print("""
 Thank you! Your subscription will be activated as soon as your payment is
 processed (that may take a few minutes).""")
-
-  # TODO: wait for payment to succeed.
   return True
