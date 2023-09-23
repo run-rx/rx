@@ -12,8 +12,9 @@ To run a command on the remote host:
 
 Run 'rx --help' for more options or visit https://docs.run-rx.com.
 """
+import argparse
 import tempfile
-from typing import List
+from typing import List, Optional, Sequence
 
 from absl import app
 from absl import logging
@@ -31,7 +32,7 @@ from rx.client.configuration import local
 
 class ExecCommand(command.Command):
 
-  def __init__(self, argv: List[str]):
+  def __init__(self, argv: Sequence[str]):
     super().__init__()
     self._argv = argv
 
@@ -56,7 +57,7 @@ class ExecCommand(command.Command):
       # TODO: is there a better way to handle this with absl flags?
       self._argv = self._argv[0].split(' ')
     try:
-      return client.exec(self._argv)
+      return client.exec(list(self._argv))
     except KeyboardInterrupt:
       client.maybe_kill()
       return worker_client.SIGINT_CODE
@@ -71,45 +72,65 @@ class ExecCommand(command.Command):
       return self._try_exec(client)
 
 
-class VersionCommand:
-  """Prints the version."""
+def _get_version(args: Optional[Sequence[str]]) -> int:
+  del args
+  print(local.VERSION)
+  return 0
 
-  def run(self) -> int:
-    print(local.VERSION)
-    return 0
+
+def _run_cmd(args: Optional[Sequence[str]]) -> int:
+  assert args
+  cmd = ExecCommand(args)
+  return cmd.run()
+
+
+def get_subcommand_parser(
+    parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
+  subparsers = parser.add_subparsers()
+  (
+    subparsers
+    .add_parser('help', help='Show help message for a given command')
+    .set_defaults(func=lambda _: parser.print_help())
+  )
+  init.add_parser(subparsers)
+  (
+    subparsers
+    .add_parser('run', help='Runs a command')
+    .set_defaults(func=_run_cmd)
+  )
+  stop.add_parser(subparsers)
+  subscribe.add_parsers(subparsers)
+  workspace_info.add_parser(subparsers)
+  (
+    subparsers
+    .add_parser('version', help='Gets the version of the rx client')
+    .set_defaults(func=_get_version)
+  )
+  return subparsers
 
 
 def main(argv):
   logging.get_absl_handler().python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
+
+  parser = argparse.ArgumentParser(
+    description=(
+      'rx is a cli interface for seamless hybrid development. Develop locally, '
+      'then run locally or in the cloud.'))
+  subparsers = get_subcommand_parser(parser)
   if len(argv) == 1:
-    print('No command given.\n')
-    app.usage(shorthelp=True)
+    parser.print_help()
     return -1
-  cmd_to_run = argv[1]
-  try:
-    if cmd_to_run == 'init':
-      cmd = init.InitCommand()
-    elif cmd_to_run == 'stop':
-      cmd = stop.StopCommand()
-    elif cmd_to_run == 'subscribe':
-      cmd = subscribe.SubscribeCommand()
-    elif cmd_to_run == 'unsubscribe':
-      cmd = subscribe.UnsubscribeCommand()
-    elif cmd_to_run == 'version':
-      cmd = VersionCommand()
-    elif cmd_to_run == 'workspace-info':
-      cmd = workspace_info.WorkspaceInfoCommand()
-    else:
-      if cmd_to_run == 'run':
-        # "rx run foo" is generally the same as "rx foo", but the extra "run"
-        # can be handy when running a script called "init", say, on the remote
-        # machine.
-        argv = argv[1:]
-      cmd = ExecCommand(argv[1:])
-    return cmd.run()
-  except KeyboardInterrupt:
-    return worker_client.SIGINT_CODE
+
+  if argv[1] in subparsers.choices:
+    ns, remainder = parser.parse_known_args(argv[1:])
+    try:
+      ns.func(remainder)
+    except KeyboardInterrupt:
+      return worker_client.SIGINT_CODE
+  else:
+    # argparse doesn't like it when it doesn't recognize anything.
+    _run_cmd(argv[1:])
 
 
 def run():

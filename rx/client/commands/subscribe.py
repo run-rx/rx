@@ -1,4 +1,6 @@
+import argparse
 import sys
+from typing import Optional, Sequence
 
 from rx.client import grpc_helper
 from rx.client import trex_client
@@ -34,6 +36,33 @@ class UnsubscribeCommand(command.Command):
       sys.stderr.flush()
       return e.code
     return 0
+
+
+def _sub(args: Optional[Sequence[str]]) -> int:
+  del args
+  s = SubscribeCommand()
+  return s.run()
+
+
+def _unsub(args: Optional[Sequence[str]]) -> int:
+  del args
+  s = UnsubscribeCommand()
+  return s.run()
+
+
+def add_parsers(subparsers: argparse._SubParsersAction):
+  (
+    subparsers
+    .add_parser(
+      'subscribe', help='Creates up a new subscription to access rx resources')
+    .set_defaults(func=_sub)
+  )
+  (
+    subparsers
+    .add_parser('unsubscribe', help='Cancels an existing subscription')
+    .set_defaults(func=_unsub)
+  )
+
 
 
 if __name__ == '__main__':

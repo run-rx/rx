@@ -1,4 +1,6 @@
+import argparse
 import sys
+from typing import Optional, Sequence
 
 from rx.client import grpc_helper
 from rx.client import trex_client
@@ -22,6 +24,20 @@ class StopCommand(command.Command):
       sys.stderr.flush()
       return e.code
     return 0
+
+
+def _run_cmd(args: Optional[Sequence[str]]) -> int:
+  del args
+  cmd = StopCommand()
+  return cmd.run()
+
+
+def add_parser(subparsers: argparse._SubParsersAction):
+  (
+    subparsers
+    .add_parser('stop', help='Stops the current instance')
+    .set_defaults(func=_run_cmd)
+  )
 
 
 if __name__ == '__main__':

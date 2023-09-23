@@ -1,5 +1,7 @@
+import argparse
 import pathlib
 import sys
+from typing import Optional, Sequence
 
 from absl import flags
 from absl import logging
@@ -138,6 +140,20 @@ Retrying init...
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
+
+
+def _run_cmd(args: Optional[Sequence[str]]) -> int:
+  del args
+  cmd = InitCommand()
+  return cmd.run()
+
+
+def add_parser(subparsers: argparse._SubParsersAction):
+  (
+    subparsers
+    .add_parser('init', help='Allocates and sets up a new workspace in AWS')
+    .set_defaults(func=_run_cmd)
+  )
 
 
 if __name__ == '__main__':

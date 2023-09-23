@@ -1,4 +1,6 @@
+import argparse
 import sys
+from typing import Optional, Sequence
 
 from rx.client import grpc_helper
 from rx.client import trex_client
@@ -27,6 +29,20 @@ class WorkspaceInfoCommand(command.Command):
 Has GPU? {'Yes' if info.has_gpu else 'No'}
 """)
     return 0
+
+
+def _run_cmd(args: Optional[Sequence[str]]) -> int:
+  del args
+  cmd = WorkspaceInfoCommand()
+  return cmd.run()
+
+
+def add_parser(subparsers: argparse._SubParsersAction):
+  (
+    subparsers
+    .add_parser('workspace-info', help='Gets info about the current workspace')
+    .set_defaults(func=_run_cmd)
+  )
 
 
 if __name__ == '__main__':
