@@ -24,14 +24,14 @@ class Executor:
     self._stub = stub
     self._request = req
 
-  def run(
-      self, metadata: Tuple[Tuple[str, Any], ...]
-  ) -> Optional[rx_pb2.ExecResponse]:
-    response = None
+  def run(self, metadata: Tuple[Tuple[str, Any], ...]) -> rx_pb2.ExecResponse:
+    result = None
     with StdinIterator(self._request) as req_it:
       for response in self._stub.Exec(req_it, metadata=metadata):
         self.write(response)
-    return response
+        result = response
+    assert result
+    return result
 
   def write(self, resp: rx_pb2.ExecResponse) -> None:
     if resp.stdout:

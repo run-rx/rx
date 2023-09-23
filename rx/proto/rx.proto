@@ -100,6 +100,8 @@ message ExecResponse {
   bytes stdout = 3;
   bytes stderr = 4;
   repeated string output_files = 5;
+  // The numeric code that the process exits with.
+  int32 exit_code = 6;
 }
 
 message GetSubscribeInfoResponse {

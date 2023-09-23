@@ -18,6 +18,7 @@ from typing import List, Optional, Sequence
 
 from absl import app
 from absl import logging
+from absl.flags import argparse_flags
 
 from rx.client import worker_client
 from rx.client import grpc_helper
@@ -125,12 +126,12 @@ def main(argv):
   if argv[1] in subparsers.choices:
     ns, remainder = parser.parse_known_args(argv[1:])
     try:
-      ns.func(remainder)
+      return ns.func(remainder)
     except KeyboardInterrupt:
       return worker_client.SIGINT_CODE
   else:
     # argparse doesn't like it when it doesn't recognize anything.
-    _run_cmd(argv[1:])
+    return _run_cmd(argv[1:])
 
 
 def run():

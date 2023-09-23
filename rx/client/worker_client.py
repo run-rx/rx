@@ -104,17 +104,18 @@ class Client:
 
     out_handler.write_outputs(self._rsync)
 
-    if (response is not None and response.HasField('result') and
-        response.result.code != 0):
-      if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        print("""
+    if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
+      print("""
 You need a subscription to continue to use compute!
 
 Please run `rx subscribe` to continue.""")
-        return 0
+      return 0
+    if response.result.code != rx_pb2.OK:
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
-    return 0
+
+    # Return the process's exit code.
+    return response.exit_code
 
   def maybe_kill(self):
     """Kill the process, if it exists."""
