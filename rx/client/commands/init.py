@@ -1,7 +1,7 @@
 import argparse
 import pathlib
 import sys
-from typing import Optional, Sequence
+from typing import List
 
 from absl import flags
 from absl import logging
@@ -142,7 +142,7 @@ Retrying init...
       return e.code
 
 
-def _run_cmd(args: Optional[Sequence[str]]) -> int:
+def _run_cmd(args: List[str]) -> int:
   del args
   cmd = InitCommand()
   return cmd.run()

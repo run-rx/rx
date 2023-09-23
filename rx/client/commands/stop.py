@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import Optional, Sequence
+from typing import List
 
 from rx.client import grpc_helper
 from rx.client import trex_client
@@ -26,7 +26,7 @@ class StopCommand(command.Command):
     return 0
 
 
-def _run_cmd(args: Optional[Sequence[str]]) -> int:
+def _run_cmd(args: List[str]) -> int:
   del args
   cmd = StopCommand()
   return cmd.run()

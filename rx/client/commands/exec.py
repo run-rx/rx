@@ -14,75 +14,25 @@ Run 'rx --help' for more options or visit https://docs.run-rx.com.
 """
 import argparse
 import tempfile
-from typing import List, Optional, Sequence
+from typing import List
 
 from absl import app
 from absl import logging
 from absl.flags import argparse_flags
 
 from rx.client import worker_client
-from rx.client import grpc_helper
-from rx.client.commands import command
 from rx.client.commands import init
+from rx.client.commands import runner
 from rx.client.commands import stop
 from rx.client.commands import subscribe
 from rx.client.commands import workspace_info
-from rx.client.configuration import config_base
 from rx.client.configuration import local
 
 
-class ExecCommand(command.Command):
-
-  def __init__(self, argv: Sequence[str]):
-    super().__init__()
-    self._argv = argv
-
-  def run(self) -> int:
-    try:
-      with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:
-        client = worker_client.create_authed_client(ch, self.local_config)
-        return self._try_exec(client)
-    except config_base.ConfigNotFoundError as e:
-      print(e)
-      return -1
-
-  def _try_exec(self, client: worker_client.Client) -> int:
-    """Sends the command to the server."""
-    if len(self._argv) < 1:
-      print('No command given.')
-      return 1
-
-    if len(self._argv) == 1:
-      # If this is a quoted arg, break it into pieces. E.g., to pass "ls -l" it
-      # must be quoted so that absl doesn't try to capture the -l.
-      # TODO: is there a better way to handle this with absl flags?
-      self._argv = self._argv[0].split(' ')
-    try:
-      return client.exec(list(self._argv))
-    except KeyboardInterrupt:
-      client.maybe_kill()
-      return worker_client.SIGINT_CODE
-    except worker_client.UnreachableError as e:
-      print('Worker was unrechable, run `rx init` to get a new instance.')
-      return e.code
-    except worker_client.WorkerError as e:
-      print(e)
-      return e.code
-    except grpc_helper.RetryError:
-      print('Retrying command...')
-      return self._try_exec(client)
-
-
-def _get_version(args: Optional[Sequence[str]]) -> int:
+def _get_version(args: List[str]) -> int:
   del args
   print(local.VERSION)
   return 0
-
-
-def _run_cmd(args: Optional[Sequence[str]]) -> int:
-  assert args
-  cmd = ExecCommand(args)
-  return cmd.run()
 
 
 def get_subcommand_parser(
@@ -94,11 +44,7 @@ def get_subcommand_parser(
     .set_defaults(func=lambda _: parser.print_help())
   )
   init.add_parser(subparsers)
-  (
-    subparsers
-    .add_parser('run', help='Runs a command')
-    .set_defaults(func=_run_cmd)
-  )
+  runner.add_parser(subparsers)
   stop.add_parser(subparsers)
   subscribe.add_parsers(subparsers)
   workspace_info.add_parser(subparsers)
@@ -131,7 +77,7 @@ def main(argv):
       return worker_client.SIGINT_CODE
   else:
     # argparse doesn't like it when it doesn't recognize anything.
-    return _run_cmd(argv[1:])
+    return runner.RunCommand(argv[1:]).run()
 
 
 def run():

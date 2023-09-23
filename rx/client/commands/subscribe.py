@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import Optional, Sequence
+from typing import List
 
 from rx.client import grpc_helper
 from rx.client import trex_client
@@ -38,13 +38,13 @@ class UnsubscribeCommand(command.Command):
     return 0
 
 
-def _sub(args: Optional[Sequence[str]]) -> int:
+def _sub(args: List[str]) -> int:
   del args
   s = SubscribeCommand()
   return s.run()
 
 
-def _unsub(args: Optional[Sequence[str]]) -> int:
+def _unsub(args: List[str]) -> int:
   del args
   s = UnsubscribeCommand()
   return s.run()
