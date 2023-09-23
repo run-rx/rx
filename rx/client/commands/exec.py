@@ -85,7 +85,7 @@ def _run_cmd(args: Optional[Sequence[str]]) -> int:
 
 
 def get_subcommand_parser(
-    parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
+    parser: argparse_flags.ArgumentParser) -> argparse._SubParsersAction:
   subparsers = parser.add_subparsers()
   (
     subparsers
@@ -113,7 +113,7 @@ def main(argv):
   logging.get_absl_handler().python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
 
-  parser = argparse.ArgumentParser(
+  parser = argparse_flags.ArgumentParser(
     description=(
       'rx is a cli interface for seamless hybrid development. Develop locally, '
       'then run locally or in the cloud.'))
