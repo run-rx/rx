@@ -53,10 +53,10 @@ rx setup for {self._rxroot}
       if not reinit:
         print('Okay, goodbye!')
         sys.exit(0)
-      message = '\nGot it. To re-init this workspace, rx will:\n\n'
+      message = 'Got it. To re-init this workspace, rx will:\n\n'
       steps.append('Shut down your existing virtual machine.')
     else:
-      message = '\nTo set up rx, this command will:\n\n'
+      message = 'To set up rx, this command will:\n\n'
     if not self._user_info_exists:
       steps.append('Create your rx account (or log in).')
     steps.append('Set up a virtual machine on AWS.')
