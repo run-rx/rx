@@ -152,8 +152,13 @@ class Client:
     while datetime.datetime.now() < end:
       sys.stdout.write('.')
       sys.stdout.flush()
-      response = self._stub.CheckSubscription(
-        empty_pb2.Empty(), metadata=self._metadata)
+      try:
+        response = self._stub.CheckSubscription(
+          empty_pb2.Empty(), metadata=self._metadata)
+      except grpc.RpcError as e:
+        e = cast(grpc.Call, e)
+        raise TrexError(
+          f'Could not check subscription status: {e.details()}', -1)
       if response.result.code == rx_pb2.OK:
         payment.success()
         return
