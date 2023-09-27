@@ -1,3 +1,4 @@
+import errno
 import fcntl
 import os
 import sys
@@ -8,11 +9,10 @@ import tty
 from types import TracebackType
 from typing import Any, Optional, Tuple, Type
 
+from absl import logging
+
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
-
-STDOUT = 1
-STDERR = 2
 
 
 class Executor:
@@ -25,21 +25,27 @@ class Executor:
     self._request = req
 
   def run(self, metadata: Tuple[Tuple[str, Any], ...]) -> rx_pb2.ExecResponse:
-    result = None
+    response = None
     with StdinIterator(self._request) as req_it:
       for response in self._stub.Exec(req_it, metadata=metadata):
-        self.write(response)
-        result = response
-    assert result
-    return result
+        self.write(response.stdout)
+        self.write(response.stderr)
+    assert response
+    return response
 
-  def write(self, resp: rx_pb2.ExecResponse) -> None:
-    if resp.stdout:
-      sys.stdout.buffer.write(resp.stdout)
-      sys.stdout.flush()
-    if resp.stderr:
-      sys.stderr.buffer.write(resp.stderr)
-      sys.stderr.flush()
+  def write(self, buf: bytes) -> None:
+    if not buf:
+      return
+    written = 0
+    while written < len(buf):
+      try:
+        written += sys.stdout.buffer.write(buf[written:])
+      except BlockingIOError as e:
+        if e.errno == errno.EAGAIN:
+          continue
+        logging.info(
+          'Error writing at byte %s of %s: %s', written, len(buf), e)
+        raise e
 
 
 class StdinIterator:
@@ -53,7 +59,13 @@ class StdinIterator:
     self._selector = selectors.DefaultSelector()
 
   def __enter__(self) -> 'StdinIterator':
+    # This also sets O_NONBLOCK for stdout/stderr, as they are copied from
+    # stdin.
     fcntl.fcntl(sys.stdin, fcntl.F_SETFL, self._original_flags | os.O_NONBLOCK)
+    # Prevent echo of characters. This is unset by the termios.tcsetattr call in
+    # __exit__.
+    tty.setcbreak(sys.stdin)
+    self._selector.register(sys.stdin, selectors.EVENT_READ, self.got_stdin)
     th = threading.Thread(target=self.loop, daemon=True)
     th.start()
     return self
@@ -79,9 +91,6 @@ class StdinIterator:
       return self._stdin_buffer.pop(0)
 
   def loop(self):
-    # Prevent echo of characters.
-    tty.setcbreak(sys.stdin)
-    self._selector.register(sys.stdin, selectors.EVENT_READ, self.got_stdin)
 
     while self._running:
       events = self._selector.select(timeout=0)
