@@ -51,12 +51,17 @@ message DockerImageProgress {
 }
 
 enum StatusCode {
+  // google.rpc.Code-style
   OK = 0;
   UNKNOWN = 1;
   INVALID = 2;
   NOT_FOUND = 3;
   UNAUTHORIZED = 4;
   SUBSCRIPTION_REQUIRED = 5;
+  // errno.h-style
+  EAGAIN = 11;
+  // HTTP-style.
+  MOVED = 301;
 }
 
 message SubscribeInfo {
@@ -151,6 +156,15 @@ message KillRequest {
   string execution_id = 2;
 }
 
+message MonitorMoveRequest {
+  string workspace_id = 1;
+}
+
+message MonitorMoveResponse {
+  Result result = 1;
+  string worker_addr = 2;
+}
+
 message SetUsernameRequest {
   string username = 1;
 }
@@ -189,6 +203,7 @@ service SetupService {
   rpc GetWorkspaceInfo(GetWorkspaceInfoRequest)
     returns (GetWorkspaceInfoResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
+  rpc MonitorMove(MonitorMoveRequest) returns (stream MonitorMoveResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}
   rpc Unsubscribe(google.protobuf.Empty) returns (GenericResponse) {}

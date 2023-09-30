@@ -51,7 +51,9 @@ class Client:
         if r.pull_progress:
           yield r.pull_progress
     result = progress_bar.show_progress_bars(get_progress(resp))
-    if result and result.code != 0:
+    if result and result.code != rx_pb2.OK:
+      if result.code == rx_pb2.MOVED:
+        raise WorkspaceRelocationError()
       raise WorkerError(
         f'Error initializing worker {self._remote_cfg.worker_addr}', result)
 
@@ -102,17 +104,19 @@ class Client:
         sys.stderr.write(msg)
         return -1
 
-    out_handler.write_outputs(self._rsync)
-
     if response.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
       print("""
 You need a subscription to continue to use compute!
 
 Please run `rx subscribe` to continue.""")
       return 0
+    if response.result.code in [rx_pb2.MOVED, rx_pb2.EAGAIN]:
+      raise WorkspaceRelocationError()
     if response.result.code != rx_pb2.OK:
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
+
+    out_handler.write_outputs(self._rsync)
 
     # Return the process's exit code.
     return response.exit_code
@@ -131,18 +135,21 @@ Please run `rx subscribe` to continue.""")
 
   def _install_deps(self):
     req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)
-    resp = None
+    response = None
     try:
-      for resp in self._stub.InstallDeps(
+      for response in self._stub.InstallDeps(
         req, metadata=self._metadata, timeout=(10 * 60)):
-        if resp.stdout:
-          sys.stdout.buffer.write(resp.stdout)
+        if response.stdout:
+          sys.stdout.buffer.write(response.stdout)
           sys.stdout.buffer.flush()
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       raise WorkerError(e.details(), result=None)
-    if resp and resp.HasField('result') and resp.result.code:
-      raise WorkerError(message=None, result=resp.result)
+    assert response, 'InstallDeps should always return something'
+    if response.result.code == rx_pb2.MOVED:
+      raise WorkspaceRelocationError()
+    if response.result.code:
+      raise WorkerError(message=None, result=response.result)
 
 
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
@@ -174,3 +181,8 @@ class WorkerError(RuntimeError):
 class UnreachableError(WorkerError):
   def __init__(self, *args: object):
     super().__init__('unreachable', None, *args)
+
+
+class WorkspaceRelocationError(RuntimeError):
+  """The worker was moved to another host."""
+  pass

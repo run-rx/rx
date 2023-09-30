@@ -1,6 +1,7 @@
 import argparse
 from typing import List
 
+from rx.client import trex_client
 from rx.client import worker_client
 from rx.client import grpc_helper
 from rx.client.commands import command
@@ -41,9 +42,29 @@ class RunCommand(command.Command):
     except worker_client.UnreachableError as e:
       print('Worker was unrechable, run `rx init` to get a new instance.')
       return e.code
+    except worker_client.WorkspaceRelocationError as e:
+      return self._move_workers()
     except worker_client.WorkerError as e:
       print(e)
       return e.code
+
+  def _move_workers(self) -> int:
+    has_gpu = (
+      self.local_config.get_target_env().alloc.hardware.processor == 'gpu')
+    gpu_message = (
+      '(This setup is included in your monthly base rate.)' if has_gpu else '')
+    print(
+      'Your workspace was stowed, please stand by while it is set up on a new '
+      f'machine. {gpu_message}')
+
+    # Connect to trex.
+    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+      cli = trex_client.create_authed_client(ch, self.local_config)
+      cli.monitor_move(self.remote_config.workspace_id)
+
+    print(
+      'Done! Please rerun this command to use your newly restored workspace.')
+    return 0
 
 
 def _run_cmd(args: List[str]) -> int:
