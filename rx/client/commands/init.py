@@ -121,7 +121,7 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
           print('Great! Let\'s get down to business.')
         try:
           return client.init(_SUBSCRIBE.value)
-        except grpc_helper.RetryError as e:
+        except trex_client.RetryError as e:
           # TODO: exit out if second_try is already true.
           sys.stderr.write("""
 Retrying init...

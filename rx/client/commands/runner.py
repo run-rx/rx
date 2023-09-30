@@ -44,9 +44,6 @@ class RunCommand(command.Command):
     except worker_client.WorkerError as e:
       print(e)
       return e.code
-    except grpc_helper.RetryError:
-      print('Retrying command...')
-      return self._try_exec(client)
 
 
 def _run_cmd(args: List[str]) -> int:

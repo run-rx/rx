@@ -95,7 +95,7 @@ class Client:
         print('Whoops, you\'ll need a subscription to continue!')
         if self.subscribe():
           # Retry init.
-          raise grpc_helper.RetryError()
+          raise RetryError()
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
@@ -106,17 +106,26 @@ class Client:
       r['daemon_module'] = resp.rsync_dest.daemon_module
 
     # Create a container on the worker.
-    sys.stdout.write('Setting up the container... ')
-    sys.stdout.flush()
+    print('Setting up the container...')
+    logging.info('Connecting to worker %s', resp.worker_addr)
     try:
       with grpc_helper.get_channel(resp.worker_addr) as ch:
         worker = worker_client.create_authed_client(ch, self._local_cfg)
         worker.init()
-      sys.stdout.write('Done.\n')
       print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
       return 0
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
+
+  def monitor_move(self, workspace_id: str):
+    request = rx_pb2.MonitorMoveRequest(workspace_id=workspace_id)
+    status = None
+    for status in self._stub.MonitorMove(request, metadata=self._metadata):
+      sys.stdout.write('.')
+    sys.stdout.write('\n')
+    assert status
+    with remote.WritableRemote(self._local_cfg.cwd) as r:
+      r['worker_addr'] = status.worker_addr
 
   def subscribe(self) -> bool:
     if not payment.explain_subscription(self._local_cfg.cwd):
@@ -167,6 +176,7 @@ class Client:
         raise TrexError(response.result.message, response.result.code)
       # Otherwise, we're just waiting for them to finish subscribing.
       time.sleep(_SLEEP_SECS)
+    sys.stdout.write('\n')
     raise TimeoutError(
       'Timed out waiting for subscription to activate. Please run the command '
       'again after subscribing.')
@@ -220,6 +230,10 @@ class TrexError(RuntimeError):
   @property
   def code(self):
     return self._code
+
+
+class RetryError(RuntimeError):
+  pass
 
 
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
