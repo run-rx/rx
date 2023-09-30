@@ -7,7 +7,7 @@ import termios
 import threading
 import tty
 from types import TracebackType
-from typing import Any, Optional, Tuple, Type
+from typing import Any, BinaryIO, Optional, Tuple, Type
 
 from absl import logging
 
@@ -28,23 +28,25 @@ class Executor:
     response = None
     with StdinIterator(self._request) as req_it:
       for response in self._stub.Exec(req_it, metadata=metadata):
-        self.write(response.stdout)
-        self.write(response.stderr)
+        self.write(response.stdout, sys.stdout.buffer)
+        self.write(response.stderr, sys.stderr.buffer)
     assert response
     return response
 
-  def write(self, buf: bytes) -> None:
+  def write(self, buf: bytes, sink: BinaryIO) -> None:
     if not buf:
       return
     written = 0
     while written < len(buf):
       try:
-        written += sys.stdout.buffer.write(buf[written:])
+        written += sink.write(buf[written:])
+        sink.flush()
       except BlockingIOError as e:
         if e.errno == errno.EAGAIN:
           continue
         logging.info(
-          'Error writing at byte %s of %s: %s', written, len(buf), e)
+          'Error writing at byte %s of %s to %s: %s', written, len(buf),
+          sink.name, e)
         raise e
 
 
