@@ -86,7 +86,7 @@ class Client:
       workspace_id=self._remote_cfg.workspace_id, argv=argv, cwd=cwd)
     runner = executor.Executor(self._stub, request)
     try:
-      response = runner.run(self._metadata)
+      response = runner.run(self._metadata, out_handler)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       sys.stderr.write(f'Error contacting {self._remote_cfg.worker_addr}: {e.details()}\n')

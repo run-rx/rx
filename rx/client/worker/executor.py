@@ -13,6 +13,7 @@ from absl import logging
 
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
+from rx.client import output_handler
 
 
 class Executor:
@@ -24,12 +25,17 @@ class Executor:
     self._stub = stub
     self._request = req
 
-  def run(self, metadata: Tuple[Tuple[str, Any], ...]) -> rx_pb2.ExecResponse:
+  def run(
+      self,
+      metadata: Tuple[Tuple[str, Any], ...],
+      out_handler: output_handler.OutputHandler,
+  ) -> rx_pb2.ExecResponse:
     response = None
     with StdinIterator(self._request) as req_it:
       for response in self._stub.Exec(req_it, metadata=metadata):
         self.write(response.stdout, sys.stdout.buffer)
         self.write(response.stderr, sys.stderr.buffer)
+        out_handler.handle(response)
     assert response
     return response
 

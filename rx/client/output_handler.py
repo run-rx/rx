@@ -20,12 +20,6 @@ class OutputHandler:
 
   def handle(self, resp: rx_pb2.ExecResponse):
     """Shows output & error streams and creates output files."""
-    if resp.stdout:
-      sys.stdout.buffer.write(resp.stdout)
-      sys.stdout.flush()
-    if resp.stderr:
-      sys.stderr.buffer.write(resp.stderr)
-      sys.stderr.flush()
     for pth_str in resp.output_files:
       self._current_outputs.add(pathlib.Path(pth_str))
 
