@@ -117,16 +117,6 @@ class Client:
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
 
-  def monitor_move(self, workspace_id: str):
-    request = rx_pb2.MonitorMoveRequest(workspace_id=workspace_id)
-    status = None
-    for status in self._stub.MonitorMove(request, metadata=self._metadata):
-      sys.stdout.write('.')
-    sys.stdout.write('\n')
-    assert status
-    with remote.WritableRemote(self._local_cfg.cwd) as r:
-      r['worker_addr'] = status.worker_addr
-
   def subscribe(self) -> bool:
     if not payment.explain_subscription(self._local_cfg.cwd):
       return False
@@ -136,6 +126,21 @@ class Client:
     payment.open_browser(response.subscribe_info)
     self._wait_for_payment()
     return True
+
+  def unfreeze(self, workspace_id: str) -> rx_pb2.Result:
+    print(
+      'Your workspace was stowed, please stand by while it is set up on a new '
+      'machine.')
+    request = rx_pb2.UnfreezeRequest(workspace_id=workspace_id)
+    status = None
+    for status in self._stub.Unfreeze(request, metadata=self._metadata):
+      sys.stdout.write('.')
+    sys.stdout.write('\n')
+    assert status
+    if status.result.code == rx_pb2.OK:
+      with remote.WritableRemote(self._local_cfg.cwd) as r:
+        r['worker_addr'] = status.worker_addr
+    return status.result
 
   def stop(self, workspace_id: str):
     req = rx_pb2.StopRequest(workspace_id=workspace_id, save=True)

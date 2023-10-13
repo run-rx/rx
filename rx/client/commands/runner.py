@@ -1,6 +1,8 @@
 import argparse
 from typing import List
 
+from absl import logging
+
 from rx.client import trex_client
 from rx.client import worker_client
 from rx.client import grpc_helper
@@ -39,32 +41,36 @@ class RunCommand(command.Command):
     except KeyboardInterrupt:
       client.maybe_kill()
       return worker_client.SIGINT_CODE
-    except worker_client.UnreachableError as e:
-      print('Worker was unrechable, run `rx init` to get a new instance.')
-      return e.code
-    except worker_client.WorkspaceRelocationError as e:
-      return self._move_workers()
+    except worker_client.RsyncError as e:
+      # Fallthrough - retry
+      logging.info('Rsync error: %s', e)
+      pass
     except worker_client.WorkerError as e:
       print(e)
       return e.code
 
-  def _move_workers(self) -> int:
-    has_gpu = (
-      self.local_config.get_target_env().alloc.hardware.processor == 'gpu')
-    gpu_message = (
-      '(This setup is included in your monthly base rate.)' if has_gpu else '')
-    print(
-      'Your workspace was stowed, please stand by while it is set up on a new '
-      f'machine. {gpu_message}')
+    # Fallthrough from retry.
+    print('Error syncing code to your worker, checking with the scheduler...')
+    return self.maybe_unfreeze()
 
+
+  def maybe_unfreeze(self) -> int:
     # Connect to trex.
     with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
       cli = trex_client.create_authed_client(ch, self.local_config)
-      cli.monitor_move(self.remote_config.workspace_id)
-
-    print(
-      'Done! Please rerun this command to use your newly restored workspace.')
-    return 0
+      result = cli.get_info(self.remote_config.workspace_id)
+      if result.state == 'frozen':
+        result = cli.unfreeze(self.remote_config.workspace_id)
+      else:
+        print('Worker was unrechable, run `rx init` to get a new instance.')
+        return -1
+    if result.code == 0:
+      print(
+        'Done! Please rerun this command to use your newly restored workspace.')
+    else:
+      print(
+        f'Error setting up this workspace on a new machine: {result.message}')
+    return result.code
 
 
 def _run_cmd(args: List[str]) -> int:

@@ -1,3 +1,4 @@
+import errno
 import os
 import pathlib
 import sys
@@ -60,7 +61,8 @@ class Client:
     # Sync sources.
     result = self._rsync.to_remote()
     if result != 0:
-      raise UnreachableError()
+      logging.info('error: %s', errno.errorcode[result])
+      raise RsyncError()
 
     # Install deps.
     self._install_deps()
@@ -71,7 +73,7 @@ class Client:
 
     result = self._rsync.to_remote()
     if result != 0:
-      raise UnreachableError()
+      raise RsyncError()
 
     rxroot = os.path.abspath(self._local_cfg.cwd)
     cwd = os.path.abspath(pathlib.Path.cwd())
@@ -178,7 +180,7 @@ class WorkerError(RuntimeError):
     self.code = result.code if result is not None else -1
 
 
-class UnreachableError(WorkerError):
+class RsyncError(WorkerError):
   def __init__(self, *args: object):
     super().__init__('unreachable', None, *args)
 

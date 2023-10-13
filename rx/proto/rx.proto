@@ -125,7 +125,8 @@ message GetWorkspaceInfoRequest {
 
 message GetWorkspaceInfoResponse {
   Result result = 1;
-  bool has_gpu = 2;
+  string state = 2;
+  bool has_gpu = 3;
 }
 
 message InitRequest {
@@ -156,11 +157,11 @@ message KillRequest {
   string execution_id = 2;
 }
 
-message MonitorMoveRequest {
+message UnfreezeRequest {
   string workspace_id = 1;
 }
 
-message MonitorMoveResponse {
+message UnfreezeResponse {
   Result result = 1;
   string worker_addr = 2;
 }
@@ -203,7 +204,7 @@ service SetupService {
   rpc GetWorkspaceInfo(GetWorkspaceInfoRequest)
     returns (GetWorkspaceInfoResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
-  rpc MonitorMove(MonitorMoveRequest) returns (stream MonitorMoveResponse) {}
+  rpc Unfreeze(UnfreezeRequest) returns (stream UnfreezeResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}
   rpc Unsubscribe(google.protobuf.Empty) returns (GenericResponse) {}
