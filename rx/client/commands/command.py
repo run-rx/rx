@@ -13,7 +13,9 @@ class Command:
 
   @property
   def local_config(self) -> local.LocalConfig:
-    assert self._rxroot
+    if not self._rxroot:
+      raise config_base.ConfigNotFoundError(
+        pathlib.Path('.'), 'Run `rx init` first!')
     config = local.find_local_config(self._rxroot)
     if not config:
       raise config_base.ConfigNotFoundError(

@@ -1,4 +1,5 @@
 from collections import abc
+import errno
 import pathlib
 import subprocess
 import tempfile
@@ -103,7 +104,7 @@ def _run_rsync(cmd: List[str]) -> int:
   try:
     result = subprocess.run(cmd, check=True, capture_output=True)
   except subprocess.CalledProcessError as e:
-    logging.error('Error running `%s`', ' '.join(e.cmd))
+    logging.error('Error running `%s` (%s)', ' '.join(e.cmd), e.returncode)
     if e.returncode == 10:
       # Worker was unreachable.
       logging.error('stderr: %s', e.stderr.decode('utf-8'))

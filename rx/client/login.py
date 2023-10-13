@@ -163,7 +163,10 @@ class LoginManager:
         'https://oauth2.googleapis.com/token', data=data, timeout=10)
     except exceptions.ConnectionError:
       raise AuthError(
-        f'Unable to connect to oauth2.googleapis.com, is your internet up?')
+        'Unable to connect to oauth2.googleapis.com, is your internet up?')
+    except exceptions.ReadTimeout:
+      raise AuthError(
+        'Timed out connecting to oauth2.googleapis.com, is your internet up?')
     if resp.status_code != 200:
       # Refreshing went wrong, remove everything!
       _delete_auth_files(self._rxroot)
