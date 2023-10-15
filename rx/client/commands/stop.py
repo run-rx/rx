@@ -13,9 +13,10 @@ class StopCommand(command.Command):
   def run(self) -> int:
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        sys.stdout.write('Stopping your workspace...')
+        sys.stdout.write('Stopping your workspace...\n')
         client = trex_client.create_authed_client(ch, self.local_config)
         client.stop(self.remote_config.workspace_id)
+        sys.stdout.write('Your remote machine has been shut down.\n')
     except config_base.ConfigNotFoundError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()

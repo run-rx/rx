@@ -46,8 +46,8 @@ message Delta {
 message DockerImageProgress {
   string id = 1;
   string status = 2;
-  int32 total = 3;
-  int32 current = 4;
+  int64 total = 3;
+  int64 current = 4;
 }
 
 enum StatusCode {
