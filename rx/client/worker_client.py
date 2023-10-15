@@ -2,7 +2,9 @@ import errno
 import os
 import pathlib
 import sys
-from typing import Generator, Iterable, List, Optional, Tuple, cast
+import threading
+import time
+from typing import Callable, Generator, Iterable, List, Optional, Tuple, TypeVar, cast
 
 from absl import flags
 from absl import logging
@@ -59,13 +61,15 @@ class Client:
         f'Error initializing worker {self._remote_cfg.worker_addr}', result)
 
     # Sync sources.
-    result = self._rsync.to_remote()
+    prog = ShowLongRunningProgress(title='Syncing directory contents')
+    result = prog.run(self._rsync.to_remote)
     if result != 0:
       logging.info('error: %s', errno.errorcode[result])
       raise RsyncError()
 
     # Install deps.
-    self._install_deps()
+    prog = ShowLongRunningProgress(title='Installing packages')
+    prog.run(self._install_deps)
 
   def exec(self, argv: List[str]) -> int:
     cmd_str = ' '.join(argv)
@@ -178,6 +182,35 @@ class WorkerError(RuntimeError):
       full_message = result.message
     super().__init__(full_message, *args)
     self.code = result.code if result is not None else -1
+
+T = TypeVar('T')
+
+class ShowLongRunningProgress:
+  def __init__(
+      self, title: str, secs: int = 1, message: str = '.'
+  ):
+    self._title = title
+    self._sleep_secs = secs
+    self._message = message
+    self._still_running = True
+
+  def run(self, func: Callable[[], T]) -> T:
+    th = threading.Thread(target=self._message_printer, daemon=True)
+    th.start()
+    retval = func()
+    self._still_running = False
+    return retval
+
+  def _message_printer(self):
+    first = True
+    time.sleep(self._sleep_secs)
+    while self._still_running:
+      if first:
+        sys.stdout.write(self._title)
+        first = False
+      sys.stdout.write(self._message)
+      sys.stdout.flush()
+      time.sleep(self._sleep_secs)
 
 
 class RsyncError(WorkerError):
