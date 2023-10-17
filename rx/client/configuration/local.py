@@ -90,9 +90,12 @@ class LocalConfig(config_base.ReadOnlyConfig):
     try:
       json.loads(json_str)
     except json.JSONDecodeError as e:
-      raise ConfigError(f'Could not parse {self["remote"]}: {e}')
+      raise ConfigError(f'Could not parse JSON in {self["remote"]}: {e}')
     target_env = rx_pb2.Remote()
-    json_format.Parse(json_str, target_env)
+    try:
+      json_format.Parse(json_str, target_env)
+    except json_format.ParseError as e:
+      raise ConfigError(f'Could not parse {self["remote"]}: {e}')
     return rx_pb2.Environment(
       alloc=target_env,
       sh=os.environ['SHELL'],
