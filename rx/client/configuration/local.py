@@ -161,15 +161,15 @@ def _install_local_files(rxroot: pathlib.Path):
   remotes.mkdir(exist_ok=True, parents=True)
 
   # Copy built-in configs.
-  _install_file(install_dir, remotes, 'python-cpu')
-  _install_file(install_dir, remotes, 'python-gpu')
+  _install_file(install_dir, remotes, 'python-cpu.json')
+  _install_file(install_dir, remotes, 'python-gpu.json')
   # Create soft link.
   default_config = remotes / 'default'
   if default_config.exists():
     # Don't undo someone else's config.
     return
-  # .rx/remote/default -> python-cpu
-  default_config.symlink_to('python-cpu')
+  # .rx/remote/default -> python-cpu.json
+  default_config.symlink_to('python-cpu.json')
 
 
 def _get_rsync_path() -> str:
