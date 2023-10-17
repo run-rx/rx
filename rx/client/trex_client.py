@@ -143,11 +143,14 @@ class Client:
     return status.result
 
   def stop(self, workspace_id: str):
+    logging.info('Stopping workspace %s', workspace_id)
     req = rx_pb2.StopRequest(workspace_id=workspace_id, save=True)
     def get_progress(
         resp: Iterable[rx_pb2.StopResponse]
     ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
       for r in resp:
+        if r.result.code != 0:
+          raise TrexError(r.result.message, r.result.code)
         yield r.push_progress
     resp = self._stub.Stop(req, metadata=self._metadata)
     result = progress_bar.show_progress_bars(get_progress(resp))

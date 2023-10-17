@@ -185,6 +185,7 @@ class WorkerError(RuntimeError):
 
 T = TypeVar('T')
 
+# TODO: use semaphores.
 class ShowLongRunningProgress:
   def __init__(
       self, title: str, secs: int = 1, message: str = '.'
