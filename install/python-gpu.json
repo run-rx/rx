@@ -1,6 +1,7 @@
 {
   "image": {
-    "docker": "python:3.11-slim"
+    "docker": "conda:3.11-slim",
+    "registry": "rx"
   },
   "hardware": {
     "processor": "gpu"
