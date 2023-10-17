@@ -51,6 +51,8 @@ class Client:
         resp: Iterable[rx_pb2.WorkerInitResponse]
     ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
       for r in resp:
+        if r.result.code != rx_pb2.OK:
+          raise WorkerError(result=r.result)
         if r.pull_progress:
           yield r.pull_progress
     result = progress_bar.show_progress_bars(get_progress(resp))
