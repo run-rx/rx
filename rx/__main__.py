@@ -11,9 +11,6 @@ To run a command on a configured remote host:
     rx CMD
 
 """
-
-from absl import app
-
 from rx.client.commands import exec
 
-app.run(exec.main)
+exec.run()

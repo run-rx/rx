@@ -13,10 +13,12 @@ To run a command on the remote host:
 Run 'rx --help' for more options or visit https://docs.run-rx.com.
 """
 import argparse
+import sys
 import tempfile
 from typing import List
 
 from absl import app
+from absl import flags
 from absl import logging
 from absl.flags import argparse_flags
 
@@ -80,5 +82,14 @@ def main(argv):
     return runner.RunCommand(argv[1:]).run()
 
 
+# Run from rx.__main__.
 def run():
-  app.run(main)
+  try:
+    app.run(main)
+  except SystemExit as e:
+    if e.code == 1:
+      cmd = ' '.join(sys.argv[1:])
+      print(
+        '\nIf you are attempting to run a command on a remote machine, try '
+        f'using quotes:\n\n\trx \'{cmd}\'')
+    raise e
