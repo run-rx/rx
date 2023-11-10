@@ -82,14 +82,19 @@ def main(argv):
     return runner.RunCommand(argv[1:]).run()
 
 
+def parse_flags_with_usage(args):
+  try:
+    return flags.FLAGS(args)
+  except flags.Error as error:
+    cmd = ' '.join(args[1:])
+    print(
+      f'{error}\n\nIf you are attempting to run a command on a remote machine, '
+      f'try using quotes:\n\n\trx \'{cmd}\'')
+    sys.exit(1)
+
+
 # Run from rx.__main__.
 def run():
-  try:
-    app.run(main)
-  except SystemExit as e:
-    if e.code == 1:
-      cmd = ' '.join(sys.argv[1:])
-      print(
-        '\nIf you are attempting to run a command on a remote machine, try '
-        f'using quotes:\n\n\trx \'{cmd}\'')
-    raise e
+  # Override absl's flag parser method with one that doesn't have a hard-coded
+  # error message and then call sys.exit.
+  app.run(main, flags_parser=parse_flags_with_usage)
