@@ -1,7 +1,6 @@
 {
   "image": {
-    "docker": "conda:3.11-slim",
-    "registry": "rx"
+    "docker": "runrx/conda:v23.10.0"
   },
   "hardware": {
     "processor": "gpu"
