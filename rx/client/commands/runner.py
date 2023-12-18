@@ -58,7 +58,11 @@ class RunCommand(command.Command):
     # Connect to trex.
     with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
       cli = trex_client.create_authed_client(ch, self.local_config)
-      result = cli.get_info(self.remote_config.workspace_id)
+      try:
+        result = cli.get_info(self.remote_config.workspace_id)
+      except trex_client.TrexError as e:
+        print(f'{e}, run `rx init` to get a new instance')
+        return -1
       if result.state == 'frozen':
         result = cli.unfreeze(self.remote_config.workspace_id)
       else:

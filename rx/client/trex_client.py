@@ -65,7 +65,13 @@ class Client:
 
   def get_info(self, workspace_id: str) -> rx_pb2.GetWorkspaceInfoResponse:
     request = rx_pb2.GetWorkspaceInfoRequest(workspace_id=workspace_id)
-    response = self._stub.GetWorkspaceInfo(request, metadata=self._metadata)
+    try:
+      response = self._stub.GetWorkspaceInfo(request, metadata=self._metadata)
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      raise TrexError(
+        f'Error reactivating workspace: {e.details()} Try running rx init '
+        'again', -1)
     if response.result.code != rx_pb2.OK:
       raise TrexError(response.result.message, response.result.code)
     return response
