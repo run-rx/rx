@@ -16,6 +16,10 @@ class SubscribeCommand(command.Command):
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.create_authed_client(ch, self.local_config)
         client.subscribe()
+    except config_base.ConfigNotFoundError as e:
+      sys.stderr.write(f'{e}\n')
+      sys.stderr.flush()
+      return -1
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
@@ -31,6 +35,10 @@ class UnsubscribeCommand(command.Command):
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.create_authed_client(ch, self.local_config)
         client.unsubscribe()
+    except config_base.ConfigNotFoundError as e:
+      sys.stderr.write(f'{e}\n')
+      sys.stderr.flush()
+      return -1
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
