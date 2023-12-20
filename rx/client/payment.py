@@ -7,20 +7,15 @@ from rx.proto import rx_pb2
 
 
 _GPU = """
-Subscriptions are charged via a monthly flat fee, plus an hourly charge if you
-use a GPU:
+Subscribing includes:
 
-    * $19.99/month for init-ing machines, running on CPU, and storing your
-      workspace.
+    * $19.99/month for unlimited CPU usage and workspace storage.
     * $3/hour for using an H100 GPU.
 
 GPU usage is only charged for hours when you have `rx run` commands on a GPU
 workspace. rx will automatically stop charging you if you aren't using a GPU.
-You can run `rx workspace-info` to check if your workspace is using a GPU.
-
-Loading and saving your environment (`rx init` and `rx stop`) are covered by the
-monthly fee, even on GPU machines, meaning you never have to worry about setting
-up your environment on a new machine.
+You can run `rx workspace-info` to check if your workspace is using a GPU
+(without incurring any charges).
 
 Finally, canceling your subscription is hassle-free: run `rx unsubscribe` at any
 time.
@@ -67,5 +62,5 @@ processed (that may take a few minutes).""")
 def success():
   print("""
 
-Subscription activated! Thank you for choosing rx.
+Subscription activated! You can now continue using rx.
 """)
