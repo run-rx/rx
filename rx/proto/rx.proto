@@ -74,6 +74,12 @@ message RsyncDestination {
   string daemon_module = 1;
 }
 
+message Execution {
+  string cmd = 1;
+  int64 start_ts = 2;
+  int64 end_ts = 3;
+}
+
 // Requests and responses
 
 // This just wraps Result in case an RPC wants to return more fields in the
@@ -118,6 +124,7 @@ message GetWorkspaceInfoResponse {
   Result result = 1;
   string state = 2;
   bool has_gpu = 3;
+  repeated Execution history = 4;
 }
 
 message InitRequest {

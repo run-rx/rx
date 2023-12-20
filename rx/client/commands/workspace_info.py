@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import sys
 from typing import List
 
@@ -27,7 +28,12 @@ class WorkspaceInfoCommand(command.Command):
     print(f"""Workspace info for {self.local_config.cwd}:
 
 Has GPU? {'Yes' if info.has_gpu else 'No'}
+
+Commands run this month:
 """)
+    for cmd in info.history:
+      start = datetime.datetime.utcfromtimestamp(cmd.start_ts)
+      print(f'  {start}\t{cmd.cmd}')
     return 0
 
 
