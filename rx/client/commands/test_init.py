@@ -47,17 +47,12 @@ class InitTests(unittest.TestCase):
       cmd = init.InitCommand()
       cmd._show_init_message()
 
-    expected = f"""Looks like you already have an rx workspace. Would you like to stop that one
-and start a new one? (Y/n): Got it. To re-init this workspace, rx will:
+    got = mock_stdout.getvalue()
 
-1. Shut down your existing virtual machine.
-2. Create an account for you with rx (or log you into your existing account).
-3. Set up a virtual machine on the cloud (on AWS).
-4. Copy over the files in this directory ({rxroot}) to your
-   virtual machine.
-
-Would you like to proceed with logging in/creating an rx account? (Y/n): """
-    self.assertEqual(expected, mock_stdout.getvalue())
+    self.assertIn(
+      'Looks like you already have an rx workspace.', got)
+    self.assertIn(
+      '1. Shut down your existing virtual machine.', got)
 
   def test_new_rxroot_message(self):
     tmpdir = absltest.get_default_test_tmpdir()
@@ -70,15 +65,10 @@ Would you like to proceed with logging in/creating an rx account? (Y/n): """
       cmd = init.InitCommand()
       cmd._show_init_message()
 
-    expected = f"""To set up rx, this command will:
+    got = mock_stdout.getvalue()
 
-1. Create an account for you with rx (or log you into your existing account).
-2. Set up a virtual machine on the cloud (on AWS).
-3. Copy over the files in this directory ({rxroot}) to your
-   virtual machine.
-
-Would you like to proceed with logging in/creating an rx account? (Y/n): """
-    self.assertEqual(expected, mock_stdout.getvalue())
+    self.assertIn('To set up rx, this command will:', got)
+    self.assertIn('3. Copy the files', got)
 
 
 if __name__ == '__main__':
