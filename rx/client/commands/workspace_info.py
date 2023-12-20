@@ -32,7 +32,7 @@ Has GPU? {'Yes' if info.has_gpu else 'No'}
 Commands run this month:
 """)
     for cmd in info.history:
-      start = datetime.datetime.utcfromtimestamp(cmd.start_ts)
+      start = datetime.datetime.fromtimestamp(cmd.start_ts)
       print(f'  {start}\t{cmd.cmd}')
     return 0
 
