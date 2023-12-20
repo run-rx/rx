@@ -61,6 +61,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     self.end_headers()
     self.wfile.write(b'All set, feel free to close this tab')
 
+  def log_message(self, format: str, *args: Any) -> None:
+    logging.info(format, *args)
+
 
 class CodeHolder:
   def __init__(self) -> None:
