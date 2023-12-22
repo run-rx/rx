@@ -91,15 +91,12 @@ class LocalConfig(config_base.ReadOnlyConfig):
       json.loads(json_str)
     except json.JSONDecodeError as e:
       raise ConfigError(f'Could not parse JSON in {self["remote"]}: {e}')
-    target_env = rx_pb2.Remote()
+    target_env = rx_pb2.Environment()
     try:
       json_format.Parse(json_str, target_env)
     except json_format.ParseError as e:
       raise ConfigError(f'Could not parse {self["remote"]}: {e}')
-    return rx_pb2.Environment(
-      alloc=target_env,
-      sh=os.environ['SHELL'],
-    )
+    return target_env
 
   def color_str(self, s: str) -> str:
     color = self['color']

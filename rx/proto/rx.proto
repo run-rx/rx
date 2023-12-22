@@ -8,24 +8,26 @@ message Hardware {
   string processor = 1;
 }
 
-message Remote {
-  message Image {
-    string docker = 1;
-    string tag = 2;
-    string registry = 3;
-  }
-  Image image = 1;
-  Hardware hardware = 2;
-  repeated int32 ports = 3;
+message Image {
+  string registry = 1;
+  string repository = 2;
+  string tag = 3;
 }
 
-message Python {
+message Remote {
+  Hardware hardware = 1;
+  repeated int32 ports = 2;
+}
+
+// Things like pip, conda, maven, etc.
+message EnvironmentManager {
+  string name = 1;
 }
 
 message Environment {
-  Remote alloc = 1;
-  Python python = 2 [deprecated = true];
-  string sh = 3;
+  Remote remote = 1;
+  Image image = 2;
+  repeated EnvironmentManager env_managers = 3;
 }
 
 message Delta {

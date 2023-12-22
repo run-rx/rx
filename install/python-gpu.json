@@ -1,8 +1,11 @@
 {
   "image": {
-    "docker": "runrx/conda:v23.10.0"
+    "repository": "runrx/conda",
+    "tag" : "v23.10.0"
   },
-  "hardware": {
-    "processor": "gpu"
+  "remote": {
+    "hardware": {
+      "processor": "gpu"
+    }
   }
 }

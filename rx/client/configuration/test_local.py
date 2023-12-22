@@ -33,10 +33,12 @@ class LocalTests(unittest.TestCase):
   def test_create_target_env(self):
     remote_config = {
       "image": {
-        "docker": "abc123"
+        "repository": "abc/def"
       },
-      "hardware": {
-        "processor": "xpu"
+      "remote": {
+        "hardware": {
+          "processor": "xpu"
+        }
       }
     }
     self._create_remote(remote_config)
@@ -45,11 +47,10 @@ class LocalTests(unittest.TestCase):
     got = cfg.get_target_env()
 
     expected = rx_pb2.Environment(
-      alloc=rx_pb2.Remote(
-        image=rx_pb2.Remote.Image(docker='abc123'),
+      remote=rx_pb2.Remote(
         hardware=rx_pb2.Hardware(processor='xpu'),
       ),
-      sh='/bin/bash',
+      image=rx_pb2.Image(repository='abc/def'),
     )
     self.assertEqual(got, expected)
 
@@ -57,7 +58,8 @@ class LocalTests(unittest.TestCase):
   def test_no_hardware(self):
     remote_config = {
       "image": {
-        "docker": "python:1.2.3"
+        "repository": "python",
+        "tag": "1.2.3"
       }
     }
     self._create_remote(remote_config, 'no-hardware')
@@ -66,10 +68,7 @@ class LocalTests(unittest.TestCase):
     got = cfg.get_target_env()
 
     expected = rx_pb2.Environment(
-      alloc=rx_pb2.Remote(
-        image=rx_pb2.Remote.Image(docker='python:1.2.3'),
-      ),
-      sh='/bin/bash',
+      image=rx_pb2.Image(repository='python', tag='1.2.3'),
     )
     self.assertEqual(got, expected)
 

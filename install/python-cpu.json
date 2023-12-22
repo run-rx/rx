@@ -1,8 +1,6 @@
 {
   "image": {
-    "docker": "python:3.11-slim"
-  },
-  "hardware": {
-    "processor": "cpu"
+    "repository": "python",
+    "tag": "3.11-slim"
   }
 }
