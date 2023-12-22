@@ -133,7 +133,6 @@ message InitRequest {
   string project_name = 1;
   RsyncSource rsync_source = 2;
   Environment target_env = 3;
-  bool force_subscribe = 4;
 }
 
 message InitResponse {

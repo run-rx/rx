@@ -76,7 +76,7 @@ class Client:
       raise TrexError(response.result.message, response.result.code)
     return response
 
-  def init(self, force_subscribe: bool = False) -> int:
+  def init(self) -> int:
     try:
       target_env = self._local_cfg.get_target_env()
     except local.ConfigError as e:
@@ -85,7 +85,6 @@ class Client:
       project_name=self._local_cfg['project_name'],
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
-      force_subscribe=force_subscribe,
     )
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
@@ -98,10 +97,15 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        print('Whoops, you\'ll need a subscription to continue!')
-        if self.subscribe():
-          # Retry init.
-          raise RetryError()
+        print("""
+
+Whoops, you\'ll need a subscription to continue! Please run:
+
+    $ rx subscribe
+
+Then retry this command.
+""")
+        return -1
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
@@ -244,10 +248,6 @@ class TrexError(RuntimeError):
   @property
   def code(self):
     return self._code
-
-
-class RetryError(RuntimeError):
-  pass
 
 
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):

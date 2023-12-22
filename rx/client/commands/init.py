@@ -14,8 +14,6 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
-_SUBSCRIBE = flags.DEFINE_bool(
-  'subscribe', False, 'Force the subscription flow.')
 _DRY_RUN = flags.DEFINE_bool(
   'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
 
@@ -119,15 +117,7 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
           return 0
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
-        try:
-          return client.init(_SUBSCRIBE.value)
-        except trex_client.RetryError as e:
-          # TODO: exit out if second_try is already true.
-          sys.stderr.write("""
-Retrying init...
-""")
-          sys.stderr.flush()
-          return self.second_try(client)
+        return client.init()
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
