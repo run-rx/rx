@@ -3,9 +3,9 @@ certifi==2022.12.7
 charset-normalizer==3.1.0
 grpcio==1.54.0
 idna==3.4
-protobuf==4.22.1
+protobuf==4.23.2
 PyJWT==2.6.0
-requests==2.28.2
+requests==2.31.0
 sty==1.0.4
 tqdm==4.65.0
 urllib3==1.26.15
