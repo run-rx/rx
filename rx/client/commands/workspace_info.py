@@ -3,10 +3,14 @@ import datetime
 import sys
 from typing import List
 
+from google.protobuf import json_format
+import yaml
+
 from rx.client import grpc_helper
 from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
+from rx.proto import rx_pb2
 
 
 class WorkspaceInfoCommand(command.Command):
@@ -25,10 +29,12 @@ class WorkspaceInfoCommand(command.Command):
       sys.stderr.flush()
       return e.code
 
-    print(f"""Workspace info for {self.local_config.cwd}:
+    target_env = json_format.MessageToDict(info.environment)
 
-Has GPU? {'Yes' if info.has_gpu else 'No'}
+    # TODO: check if info matches the remote config.
+    print(f"""Workspace info for {self.local_config.cwd}
 
+Remote config:\n\n{yaml.safe_dump(target_env)}
 Commands run this month:
 """)
     for cmd in info.history:

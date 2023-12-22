@@ -125,8 +125,8 @@ message GetWorkspaceInfoRequest {
 message GetWorkspaceInfoResponse {
   Result result = 1;
   string state = 2;
-  bool has_gpu = 3;
-  repeated Execution history = 4;
+  repeated Execution history = 3;
+  Environment environment = 4;
 }
 
 message InitRequest {

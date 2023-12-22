@@ -16,7 +16,7 @@ include = [
   "install/*",
 ]
 exclude = [
-  "**/*_test.py",
+  "**/test_*.py",
   "rx/proto/*.proto",
 ]
 
@@ -26,6 +26,7 @@ absl-py = "^1.4.0"
 grpcio = "^1.54.0"
 protobuf = "^4.22.3"
 PyJWT = "^2.6.0"
+PyYAML = "^6.0.1"
 requests = "^2.30.0"
 sty = "^1.0.4"
 tqdm = "^4.65.0"
