@@ -1,10 +1,10 @@
 from collections import abc
-import json
 import pathlib
 from types import TracebackType
 from typing import Optional, Type
 
 from absl import flags
+import yaml
 
 RX_DIR = pathlib.Path('.rx')
 
@@ -22,7 +22,7 @@ class ReadOnlyConfig(abc.Mapping):
     self._config_file = config_file
     if config_file.exists():
       with self._config_file.open(mode='rt', encoding='utf-8') as fh:
-        self._config = json.load(fh)
+        self._config = yaml.safe_load(fh)
     else:
       if strict_mode:
         raise ConfigNotFoundError(config_file)
@@ -52,10 +52,12 @@ class ReadWriteConfig(abc.MutableMapping, ReadOnlyConfig):
   def __exit__(self, exctype: Optional[Type[BaseException]],
              excinst: Optional[BaseException],
              exctb: Optional[TracebackType]) -> bool:
+    del excinst
+    del exctb
     if exctype is None:
       # Keep config file up-to-date.
       with self._config_file.open(mode='wt', encoding='utf-8') as fh:
-        json.dump(self._config, fh)
+        yaml.safe_dump(self._config, fh)
     return False
 
   def __setitem__(self, item, value):

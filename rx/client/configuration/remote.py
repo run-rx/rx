@@ -9,11 +9,11 @@ class Remote(config_base.ReadOnlyConfig):
 
   @property
   def workspace_id(self):
-    return self['workspace_id']
+    return self._config['workspace_id']
 
   @property
   def worker_addr(self):
-    return self['worker_addr']
+    return self._config['worker_addr']
 
 
 class WritableRemote(config_base.ReadWriteConfig):

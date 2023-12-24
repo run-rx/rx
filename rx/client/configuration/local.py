@@ -12,11 +12,12 @@ from absl import flags
 from absl import logging
 from google.protobuf import json_format
 import sty
+import yaml
 
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.12'
+VERSION = '0.0.13'
 
 IGNORE = pathlib.Path('.rxignore')
 
@@ -40,12 +41,12 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
   def setup_remote(self):
     """Sets the "remote" field (and color) for the local config."""
     remote = str(_REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE)
+    self._config['remote'] = remote
     remote_path = self._workspace_dir / remote
     try:
       with remote_path.open(mode='rt', encoding='utf-8') as fh:
         remote_content = fh.read()
         self._set_color(remote_content)
-        self['remote'] = remote
     except FileExistsError:
       raise FileExistsError(
         f'Could not find remote config: {remote_path} does not exist')
@@ -60,7 +61,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
     g = hash_val & 255
     hash_val = hash_val >> 8
     b = hash_val & 255
-    self['color'] = {'r': r, 'g': g, 'b': b}
+    self._config['color'] = {'r': r, 'g': g, 'b': b}
 
 
 class LocalConfig(config_base.ReadOnlyConfig):
@@ -84,22 +85,20 @@ class LocalConfig(config_base.ReadOnlyConfig):
     )
 
   def get_target_env(self) -> rx_pb2.Environment:
-    remote_file = self.cwd / self['remote']
-    with remote_file.open(mode='rt', encoding='utf-8') as fh:
-      json_str = fh.read()
+    remote_file = self.cwd / self._config['remote']
     try:
-      json.loads(json_str)
-    except json.JSONDecodeError as e:
-      raise ConfigError(f'Could not parse JSON in {self["remote"]}: {e}')
-    target_env = rx_pb2.Environment()
+      with remote_file.open(mode='rt', encoding='utf-8') as fh:
+        remote_config = yaml.safe_load(fh)
+    except yaml.YAMLError as e:
+      raise ConfigError(f'Could not parse yaml in {remote_file}: {e}')
     try:
-      json_format.Parse(json_str, target_env)
+      target_env = rx_pb2.Environment(**remote_config)
     except json_format.ParseError as e:
       raise ConfigError(f'Could not parse {self["remote"]}: {e}')
     return target_env
 
   def color_str(self, s: str) -> str:
-    color = self['color']
+    color = self._config['color']
     fg = sty.fg(color['r'], color['g'], color['b'])
     return f'{fg}{s}{sty.rs.fg}'
 
@@ -111,8 +110,8 @@ def create_local_config(rxroot: pathlib.Path) -> LocalConfig:
   config_dir.mkdir(exist_ok=True, parents=True)
   with LocalConfigWriter(rxroot) as c:
     c.setup_remote()
-    c['project_name'] = _find_project_name(rxroot)
-    c['rsync_path'] = _get_rsync_path()
+    c._config['project_name'] = _find_project_name(rxroot)
+    c._config['rsync_path'] = _get_rsync_path()
   return LocalConfig(rxroot)
 
 
@@ -160,15 +159,24 @@ def _install_local_files(rxroot: pathlib.Path):
   remotes.mkdir(exist_ok=True, parents=True)
 
   # Copy built-in configs.
-  _install_file(install_dir, remotes, 'python-cpu.json')
-  _install_file(install_dir, remotes, 'python-gpu.json')
+  python_cpu = _install_file(install_dir, remotes, 'python-cpu.yaml')
+  _install_file(install_dir, remotes, 'python-gpu.yaml')
   # Create soft link.
   default_config = remotes / 'default'
+  default_target = str(default_config.resolve())
+  is_yaml = (
+    default_target.endswith('.yaml') or
+    default_target.endswith('.yml'))
   if default_config.exists():
-    # Don't undo someone else's config.
-    return
-  # .rx/remote/default -> python-cpu.json
-  default_config.symlink_to('python-cpu.json')
+    if is_yaml:
+      # Don't undo someone else's config, unless it's old.
+      return
+    print(
+      f'Your default config points to {default_target}, which doesn\'t look '
+      f'like a yaml file. Updating it to {python_cpu}.')
+    default_config.unlink()
+  # .rx/remote/default -> python-cpu.yaml
+  default_config.symlink_to('python-cpu.yaml')
 
 
 def _get_rsync_path() -> str:
@@ -202,12 +210,13 @@ def get_local_config_path(rxroot: pathlib.Path) -> pathlib.Path:
   return config_base.get_config_dir(rxroot) / 'local'
 
 
-def _install_file(install_dir, config_dir, base_name):
+def _install_file(install_dir, config_dir, base_name) -> pathlib.Path:
   """Installs a file if it doesn't already exist."""
   source_path = install_dir / base_name
   destination_path = config_dir / base_name
   if not destination_path.exists():
     shutil.copy(source_path, destination_path)
+  return destination_path
 
 
 class ConfigError(RuntimeError):

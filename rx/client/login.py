@@ -32,6 +32,7 @@ from absl import logging
 import jwt
 import requests
 from requests import exceptions
+import yaml
 
 from rx.client import browser
 from rx.client.configuration import config_base
@@ -154,7 +155,7 @@ class LoginManager:
       _delete_auth_files(self._rxroot)
       raise AuthError('Could not log in, please try again.')
     with open(refresh_file, mode='rt', encoding='utf-8') as fh:
-      refresh_token = json.load(fh)
+      refresh_token = yaml.safe_load(fh)
     data = {
       'client_id': _CLIENT_ID,
       'client_secret': _CLIENT_SECRET,
@@ -176,10 +177,10 @@ class LoginManager:
       raise AuthError(
         f'Unable to refresh log in: {resp.reason} [{resp.status_code}]\n' +
         resp.text)
-    access_token = _get_access_token_file(self._rxroot)
-    with access_token.open(mode='wt', encoding='utf-8') as fh:
-      fh.write(resp.text)
+    access_token_file = _get_access_token_file(self._rxroot)
     self._access_token = json.loads(resp.text)
+    with access_token_file.open(mode='wt', encoding='utf-8') as fh:
+      yaml.safe_dump(self._access_token, fh)
 
   def start_server(self):
     """Starts a local server in a separate thread."""
@@ -229,13 +230,13 @@ class LoginManager:
     if resp.status_code != 200:
       raise AuthError(
         f'Unable to log in: {resp.reason} [{resp.status_code}]\n{resp.text}')
-    access_token = _get_access_token_file(self._rxroot)
-    with access_token.open(mode='wt', encoding='utf-8') as fh:
-      fh.write(resp.text)
-    refresh = _get_refresh_token_file(self._rxroot)
-    with refresh.open(mode='wt', encoding='utf-8') as fh:
-      fh.write(resp.text)
+    access_token_file = _get_access_token_file(self._rxroot)
     self._access_token = json.loads(resp.text)
+    with access_token_file.open(mode='wt', encoding='utf-8') as fh:
+      yaml.safe_dump(self._access_token, fh)
+    refresh_file = _get_refresh_token_file(self._rxroot)
+    with refresh_file.open(mode='wt', encoding='utf-8') as fh:
+      yaml.safe_dump(self._access_token, fh)
 
   def _start_local_server(self):
     """Starts the server."""
@@ -272,11 +273,11 @@ def needs_login(rxroot: pathlib.Path) -> bool:
 
 
 def _get_access_token_file(rxroot: pathlib.Path) -> pathlib.Path:
-  return config_base.get_config_dir(rxroot) / 'user/access-token'
+  return config_base.get_config_dir(rxroot) / 'user/access-token.yaml'
 
 
 def _get_refresh_token_file(rxroot: pathlib.Path) -> pathlib.Path:
-  return config_base.get_config_dir(rxroot) / 'user/.refresh-token'
+  return config_base.get_config_dir(rxroot) / 'user/.refresh-token.yaml'
 
 
 def _no_auth_login() -> Dict[str, Any]:

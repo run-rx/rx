@@ -1,0 +1,4 @@
+image:
+  # This corresponds to the image at https://hub.docker.com/repository/python.
+  repository: 'python'
+  tag: '3.11-slim'

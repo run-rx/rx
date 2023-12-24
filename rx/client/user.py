@@ -25,7 +25,7 @@ class User(config_base.ReadOnlyConfig):
       email: Optional[str] = None,
       strict: bool = True):
     super().__init__(_get_user_config(cwd))
-    if strict and email != self['email']:
+    if strict and email != self._config['email']:
       raise RuntimeError(f'Mismatched emails: {email} vs. {self["email"]}')
 
 
@@ -54,4 +54,4 @@ def username_validator(username: Optional[str]) -> bool:
 
 
 def _get_user_config(rxroot: pathlib.Path) -> pathlib.Path:
-  return rxroot / config_base.get_config_dir(rxroot) / 'user/config'
+  return rxroot / config_base.get_config_dir(rxroot) / 'user/config.yaml'
