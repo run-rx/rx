@@ -1,21 +1,6 @@
-# Welcome to rx!
-
 [rx](https://www.run-rx.com) is a command-line tool to make remote execution
 easy. It integrates with whatever tools you're currently using and gives you a
 long-running VM in the cloud that is kept in sync with your local machine.
-
-## Installation
-
-Install via pip:
-
-    pip install run-rx
-
-rx also requires rsync to run, make sure you have it installed:
-
-    which rsync
-
-If not, check out [its website](https://rsync.samba.org/download.html) or your
-favorite package manager to install.
 
 ## Usage
 

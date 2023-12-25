@@ -14,6 +14,7 @@ mdurl==0.1.2
 more-itertools==9.1.0
 packaging==23.2
 pkginfo==1.9.6
+poetry-core==1.6.1
 Pygments==2.15.1
 readme-renderer==37.3
 requests-toolbelt==1.0.0
