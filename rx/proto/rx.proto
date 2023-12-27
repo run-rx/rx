@@ -177,6 +177,7 @@ message StopRequest {
 message StopResponse {
   Result result = 1;
   DockerImageProgress push_progress = 2;
+  Image image = 3;
 }
 
 message WorkerInitRequest {

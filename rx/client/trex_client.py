@@ -1,10 +1,11 @@
 import datetime
 import sys
 import time
-from typing import cast, Generator, Iterable, Optional, Tuple
+from typing import cast, Any, Dict, Generator, Iterable, Optional, Tuple
 
 from absl import logging
 from google.protobuf import empty_pb2
+from google.protobuf import json_format
 import grpc
 
 from rx.client import grpc_helper
@@ -152,20 +153,25 @@ Then retry this command.
         r['worker_addr'] = status.worker_addr
     return status.result
 
-  def stop(self, workspace_id: str):
+  def stop(self, workspace_id: str) -> Dict[str, Any]:
     logging.info('Stopping workspace %s', workspace_id)
     req = rx_pb2.StopRequest(workspace_id=workspace_id, save=True)
+    x = {'image': {}}
     def get_progress(
         resp: Iterable[rx_pb2.StopResponse]
     ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
       for r in resp:
         if r.result.code != 0:
           raise TrexError(r.result.message, r.result.code)
-        yield r.push_progress
+        if r.HasField('push_progress'):
+          yield r.push_progress
+        if r.HasField('image'):
+          x['image'] = json_format.MessageToDict(r.image)
     resp = self._stub.Stop(req, metadata=self._metadata)
     result = progress_bar.show_progress_bars(get_progress(resp))
     if result and result.code != 0:
       raise TrexError('Error stopping worker', result)
+    return x
 
   def unsubscribe(self):
     req = empty_pb2.Empty()

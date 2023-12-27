@@ -2,6 +2,8 @@ import argparse
 import sys
 from typing import List
 
+import yaml
+
 from rx.client import grpc_helper
 from rx.client import trex_client
 from rx.client.commands import command
@@ -15,8 +17,7 @@ class StopCommand(command.Command):
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         sys.stdout.write('Stopping your workspace...\n')
         client = trex_client.create_authed_client(ch, self.local_config)
-        client.stop(self.remote_config.workspace_id)
-        sys.stdout.write('Your remote machine has been shut down.\n')
+        image = client.stop(self.remote_config.workspace_id)
     except config_base.ConfigNotFoundError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
@@ -25,6 +26,11 @@ class StopCommand(command.Command):
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
+    sys.stdout.write('Your remote machine has been shut down.\n')
+    if image:
+      print(
+        '\nIf you\'d like to initialize a new workspace with this state, '
+        f'use the following lines in your config:\n\n{yaml.safe_dump(image)}')
     return 0
 
 
