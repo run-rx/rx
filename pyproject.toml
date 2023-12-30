@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "run-rx"
-version = "0.0.12"
+version = "0.0.13"
 description = "A tool to simplify remote execution"
 authors = ["Kris Chodorow <k.chodorow@gmail.com>"]
 license = "LICENSE.txt"
-readme = "README.md"
+readme = "pip_readme.md"
 homepage = "https://www.run-rx.com"
 repository = "https://github.com/run-rx/rx"
 packages = [
