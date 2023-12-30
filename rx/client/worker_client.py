@@ -70,8 +70,7 @@ class Client:
       raise RsyncError()
 
     # Install deps.
-    prog = ShowLongRunningProgress(title='Installing packages')
-    prog.run(self._install_deps)
+    self._install_deps()
 
   def exec(self, argv: List[str]) -> int:
     cmd_str = ' '.join(argv)
@@ -173,16 +172,15 @@ def is_subdir(*, parent: str, child: str) -> bool:
 class WorkerError(RuntimeError):
   def __init__(
       self,
-      message: Optional[str],
-      result: Optional[rx_pb2.Result],
-      *args: object):
+      message: Optional[str] = None,
+      result: Optional[rx_pb2.Result] = None):
     """Allow passing message, result, or both."""
     full_message = message
     if message is not None and result is not None:
       full_message = f'{message}: {result.message}'
     elif result is not None:
       full_message = result.message
-    super().__init__(full_message, *args)
+    super().__init__(full_message)
     self.code = result.code if result is not None else -1
 
 T = TypeVar('T')
