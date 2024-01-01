@@ -144,9 +144,6 @@ def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
 
 
 def _install_local_files(rxroot: pathlib.Path):
-  # Output directory.
-  (rxroot / 'rx-out').mkdir(exist_ok=True)
-
   install_dir = pathlib.Path(get_source_path() / 'install')
 
   _install_file(install_dir, rxroot, IGNORE)
