@@ -43,6 +43,11 @@ class UnsubscribeCommand(command.Command):
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
+
+    print("""
+Your subscription has been canceled.
+
+Please contact us at hello@run-rx.com if you have any feedback.""")
     return 0
 
 
