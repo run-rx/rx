@@ -10,7 +10,7 @@ _GPU = """
 Subscribing includes:
 
     * $19.99/month for unlimited CPU usage and workspace storage.
-    * $3/hour for using an H100 GPU.
+    * $3/hour for using a GPU.
 
 GPU usage is only charged for hours when you have `rx run` commands on a GPU
 workspace. rx will automatically stop charging you if you aren't using a GPU.
