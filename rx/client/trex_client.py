@@ -217,6 +217,8 @@ Then retry this command.
     if resp.result.code == rx_pb2.INVALID:
       raise TrexError(
         f'{resp.result.message}\nInvalid username: {username}', rx_pb2.INVALID)
+    elif resp.result.code != 0:
+      raise TrexError(resp.result.message, resp.result.code)
     return username
 
   def _get_username(self, email: str) -> str:
