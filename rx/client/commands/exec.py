@@ -59,8 +59,11 @@ def get_subcommand_parser(
 
 
 def main(argv):
-  logging.get_absl_handler().python_handler.use_absl_log_file(
+  handler = logging.get_absl_handler()
+  assert handler
+  handler.python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
+  logging.info('Running "%s"', argv)
 
   parser = argparse_flags.ArgumentParser(
     description=(
