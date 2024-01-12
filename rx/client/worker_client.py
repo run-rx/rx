@@ -216,7 +216,7 @@ class ShowLongRunningProgress:
 
 class RsyncError(WorkerError):
   def __init__(self, *args: object):
-    super().__init__('unreachable', None, *args)
+    super().__init__('rsync unreachable', None, *args)
 
 
 class WorkspaceRelocationError(RuntimeError):
