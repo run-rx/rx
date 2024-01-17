@@ -72,6 +72,33 @@ class LocalTests(unittest.TestCase):
     )
     self.assertEqual(got, expected)
 
+  def test_env_conversion(self):
+    env_dict = {
+      'image': {
+        'repository': 'python',
+        'tag': '1.2.3',
+        'environment_variables': {
+          'DEV_AUTH': True,
+          'SEED': 123,
+          'STR': 'hello world',
+        }
+      }
+    }
+
+    got = local.env_dict_to_pb(env_dict)
+
+    expected = rx_pb2.Environment(
+      image=rx_pb2.Image(
+        repository='python',
+        tag='1.2.3',
+        environment_variables={
+          'DEV_AUTH': 'true',
+          'SEED': '123',
+          'STR': 'hello world',
+        }),
+    )
+    self.assertEqual(got, expected)
+
   def _create_remote(self, cfg: Dict[str, Any], remote_name: str = 'test'):
     remote_config_file = self._rxroot / remote_name
     with remote_config_file.open(mode='wt', encoding='utf-8') as fh:

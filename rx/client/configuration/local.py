@@ -1,16 +1,13 @@
 """All of the info we can get without going to the server."""
 import hashlib
-import json
 import pathlib
-import os
 import shutil
 import subprocess
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import uuid
 
 from absl import flags
 from absl import logging
-from google.protobuf import json_format
 import sty
 import yaml
 
@@ -91,11 +88,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
         remote_config = yaml.safe_load(fh)
     except yaml.YAMLError as e:
       raise ConfigError(f'Could not parse yaml in {remote_file}: {e}')
-    try:
-      target_env = rx_pb2.Environment(**remote_config)
-    except json_format.ParseError as e:
-      raise ConfigError(f'Could not parse {self["remote"]}: {e}')
-    return target_env
+    return env_dict_to_pb(remote_config)
 
   def color_str(self, s: str) -> str:
     color = self._config['color']
@@ -141,6 +134,26 @@ def get_source_path() -> pathlib.Path:
 
 def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
   return (('cv', VERSION),)
+
+
+def env_dict_to_pb(env_dict: Dict[str, Any]) -> rx_pb2.Environment:
+  env_pb = rx_pb2.Environment()
+  if 'remote' in env_dict:
+    remote_pb = rx_pb2.Remote(**env_dict['remote'])
+    env_pb.remote.CopyFrom(remote_pb)
+  if 'image' in env_dict:
+    image_dict = env_dict['image']
+    image_pb = rx_pb2.Image(**{
+      k: v for k, v in image_dict.items() if k != 'environment_variables'
+    })
+    if 'environment_variables' in image_dict:
+      for k, v in image_dict['environment_variables'].items():
+        if isinstance(v, bool):
+          # YAML is a bit too helpful about type conversions.
+          v = 'true' if v else 'false'
+        image_pb.environment_variables[k] = str(v)
+    env_pb.image.CopyFrom(image_pb)
+  return env_pb
 
 
 def _install_local_files(rxroot: pathlib.Path):

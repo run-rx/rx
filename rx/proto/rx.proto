@@ -9,14 +9,16 @@ message Hardware {
 }
 
 message Image {
+  // Everything related to starting the container.
   string registry = 1;
   string repository = 2;
   string tag = 3;
+  repeated int32 ports = 4;
+  map<string, string> environment_variables = 5;
 }
 
 message Remote {
   Hardware hardware = 1;
-  repeated int32 ports = 2;
 }
 
 // Things like pip, conda, maven, etc.
