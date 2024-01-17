@@ -1,4 +1,3 @@
-import argparse
 import datetime
 
 from google.protobuf import json_format
@@ -10,7 +9,7 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 
 
-class WorkspaceCommand(command.TrexCommand):
+class InfoCommand(command.TrexCommand):
   """Get info about the current workspace."""
 
   def _run(self) -> int:
@@ -30,22 +29,3 @@ Remote config YAML file:\n\n{yaml.safe_dump(target_env)}""")
         start = datetime.datetime.fromtimestamp(cmd.start_ts)
         print(f'  {start}\t{cmd.cmd}')
     return 0
-
-
-def add_parser(subparsers: argparse._SubParsersAction):
-  (
-    subparsers
-    .add_parser('workspace-info', help='Workspace handling commands')
-    .set_defaults(cmd=WorkspaceCommand)
-  )
-
-  ws_cmd = subparsers.add_parser(
-    'ws', help='Workspace handling commands')
-  subparsers = ws_cmd.add_subparsers(required=True)
-  info = subparsers.add_parser(
-    'info', help='Gets info about the current workspace')
-  info.set_defaults(cmd=WorkspaceCommand)
-
-
-if __name__ == '__main__':
-  print('Call exec.')

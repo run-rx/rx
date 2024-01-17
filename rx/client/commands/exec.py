@@ -28,7 +28,7 @@ from rx.client.commands import init
 from rx.client.commands import runner
 from rx.client.commands import stop
 from rx.client.commands import subscribe
-from rx.client.commands import workspace
+from rx.client.commands import ws
 from rx.client.configuration import local
 
 
@@ -63,7 +63,7 @@ def get_subcommand_parser(
   runner.add_parser(subparsers)
   stop.add_parser(subparsers)
   subscribe.add_parsers(subparsers)
-  workspace.add_parser(subparsers)
+  ws.add_parser(subparsers)
   (
     subparsers
     .add_parser('version', help='Gets the version of the rx client')
