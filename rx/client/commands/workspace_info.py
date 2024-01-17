@@ -16,14 +16,11 @@ from rx.proto import rx_pb2
 class WorkspaceInfoCommand(command.Command):
   """Get info about the current workspace."""
 
-  def run(self) -> int:
+  def _run(self) -> int:
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.create_authed_client(ch, self.local_config)
         info = client.get_info(self.remote_config.workspace_id)
-    except config_base.ConfigNotFoundError as e:
-      print('No workspace found.')
-      return -1
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()

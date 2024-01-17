@@ -16,14 +16,10 @@ class RunCommand(command.Command):
     super().__init__()
     self._argv = argv
 
-  def run(self) -> int:
-    try:
-      with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:
-        client = worker_client.create_authed_client(ch, self.local_config)
-        return self._try_exec(client)
-    except config_base.ConfigNotFoundError as e:
-      print(e)
-      return -1
+  def _run(self) -> int:
+    with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:
+      client = worker_client.create_authed_client(ch, self.local_config)
+      return self._try_exec(client)
 
   def _try_exec(self, client: worker_client.Client) -> int:
     """Sends the command to the server."""
@@ -52,7 +48,6 @@ class RunCommand(command.Command):
     # Fallthrough from retry.
     print('Error syncing code to your worker, checking with the scheduler...')
     return self.maybe_unfreeze()
-
 
   def maybe_unfreeze(self) -> int:
     # Connect to trex.

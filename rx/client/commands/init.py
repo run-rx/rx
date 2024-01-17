@@ -82,7 +82,7 @@ Press y to continue:""", 'y')
     client.create_user_or_log_in()
     return True
 
-  def run(self) -> int:
+  def _run(self) -> int:
     self._show_init_message()
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')

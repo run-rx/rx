@@ -1,4 +1,5 @@
 import pathlib
+import sys
 
 from rx.client.configuration import config_base
 from rx.client.configuration import local
@@ -25,3 +26,15 @@ class Command:
   @property
   def remote_config(self) -> remote.Remote:
     return remote.Remote(self.local_config.cwd)
+
+  def run(self) -> int:
+    try:
+      return self._run()
+    except config_base.ConfigNotFoundError as e:
+      path = 'cwd' if e.path == '.' else e.path
+      print(
+        f'No workspace found at {e.path}, {e}.', file=sys.stderr, flush=True)
+      return -1
+
+  def _run(self) -> int:
+    raise NotImplementedError()
