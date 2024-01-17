@@ -4,6 +4,7 @@ import pathlib
 import sys
 from typing import List
 
+from rx.client import trex_client
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
@@ -50,3 +51,12 @@ class Command:
 
   def _run(self) -> int:
     raise NotImplementedError()
+
+
+class TrexCommand(Command):
+  def run(self) -> int:
+    try:
+      return super().run()
+    except trex_client.TrexError as e:
+      print(e, file=sys.stderr, flush=True)
+      return e.code

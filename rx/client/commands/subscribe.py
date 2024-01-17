@@ -8,33 +8,23 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 
 
-class SubscribeCommand(command.Command):
+class SubscribeCommand(command.TrexCommand):
   """Create a subscription."""
 
   def _run(self) -> int:
-    try:
-      with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        client = trex_client.create_authed_client(ch, self.local_config)
-        client.subscribe()
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
+    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+      client = trex_client.create_authed_client(ch, self.local_config)
+      client.subscribe()
     return 0
 
 
-class UnsubscribeCommand(command.Command):
+class UnsubscribeCommand(command.TrexCommand):
   """Cancel a subscription."""
 
   def _run(self) -> int:
-    try:
-      with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        client = trex_client.create_authed_client(ch, self.local_config)
-        client.unsubscribe()
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
+    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+      client = trex_client.create_authed_client(ch, self.local_config)
+      client.unsubscribe()
 
     print("""
 Your subscription has been canceled.
@@ -55,7 +45,6 @@ def add_parsers(subparsers: argparse._SubParsersAction):
     .add_parser('unsubscribe', help='Cancels an existing subscription')
     .set_defaults(cmd=UnsubscribeCommand)
   )
-
 
 
 if __name__ == '__main__':

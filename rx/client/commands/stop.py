@@ -9,19 +9,14 @@ from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 
-class StopCommand(command.Command):
+class StopCommand(command.TrexCommand):
   """Initialize (or reinitialize) the remote."""
 
   def _run(self) -> int:
-    try:
-      with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        sys.stdout.write('Stopping your workspace...\n')
-        client = trex_client.create_authed_client(ch, self.local_config)
-        image = client.stop(self.remote_config.workspace_id)
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
+    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+      sys.stdout.write('Stopping your workspace...\n')
+      client = trex_client.create_authed_client(ch, self.local_config)
+      image = client.stop(self.remote_config.workspace_id)
     sys.stdout.write('Your remote machine has been shut down.\n')
     if image:
       print(

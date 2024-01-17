@@ -12,18 +12,13 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 
 
-class WorkspaceInfoCommand(command.Command):
+class WorkspaceInfoCommand(command.TrexCommand):
   """Get info about the current workspace."""
 
   def _run(self) -> int:
-    try:
-      with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
-        client = trex_client.create_authed_client(ch, self.local_config)
-        info = client.get_info(self.remote_config.workspace_id)
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
+    with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
+      client = trex_client.create_authed_client(ch, self.local_config)
+      info = client.get_info(self.remote_config.workspace_id)
 
     target_env = json_format.MessageToDict(info.environment)
 
