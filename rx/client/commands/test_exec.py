@@ -13,7 +13,7 @@ class ExecTests(unittest.TestCase):
     got = exec.parse_flags_with_usage(['rx', 'init', '--dry-run'])
 
     want = command.CommandLine(
-      ns=argparse.Namespace(cmd=init.InitCommand),
+      ns=argparse.Namespace(cmd=init.InitCommand, dry_run=True),
       remainder=[],
       original=['rx', 'init', '--dry-run']
     )

@@ -17,8 +17,8 @@ class CommandLine:
 
 
 class Command:
-  def __init__(self, argv: List[str]) -> None:
-    del argv
+  def __init__(self, cmdline: CommandLine) -> None:
+    self._cmdline = cmdline
     if config_base.RX_ROOT.value:
       self._rxroot = pathlib.Path(config_base.RX_ROOT.value)
     else:

@@ -1,9 +1,7 @@
 import argparse
 import pathlib
 import sys
-from typing import List
 
-from absl import flags
 from absl import logging
 
 from rx.client import grpc_helper
@@ -14,15 +12,12 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 
-_DRY_RUN = flags.DEFINE_bool(
-  'dry-run', False, 'Shows a list of files that would be uploaded by rx init')
-
 
 class InitCommand(command.Command):
   """Initialize (or reinitialize) the remote."""
 
-  def __init__(self, argv: List[str]):
-    super().__init__(argv)
+  def __init__(self, cmdline: command.CommandLine):
+    super().__init__(cmdline)
     if self._rxroot:
       self._config_exists = local.get_local_config_path(self._rxroot).exists()
       self._user_info_exists = not login.needs_login(self._rxroot)
@@ -31,10 +26,6 @@ class InitCommand(command.Command):
       self._rxroot = pathlib.Path.cwd()
       self._config_exists = False
       self._user_info_exists = False
-
-  @property
-  def rxroot(self) -> pathlib.Path:
-    return self._rxroot
 
   def _show_init_message(self):
     underline = '=' * len(str(self._rxroot))
@@ -91,7 +82,7 @@ Press y to continue:""", 'y')
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)
-        if _DRY_RUN.value:
+        if self._cmdline.ns.dry_run:
           client.dry_run()
           return 0
 
@@ -133,11 +124,12 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
 
 
 def add_parser(subparsers: argparse._SubParsersAction):
-  (
-    subparsers
-    .add_parser('init', help='Allocates and sets up a new workspace in AWS')
-    .set_defaults(cmd=InitCommand)
-  )
+  init_cmd = subparsers.add_parser(
+    'init', help='Allocates and sets up a new workspace in AWS')
+  init_cmd.add_argument(
+    '--dry-run', default=False, dest='dry_run', action='store_true',
+    help='Shows a list of files that would be uploaded by rx init')
+  init_cmd.set_defaults(cmd=InitCommand)
 
 
 if __name__ == '__main__':

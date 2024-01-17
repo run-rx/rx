@@ -13,6 +13,7 @@ To run a command on the remote host:
 Run 'rx --help' for more options or visit https://docs.run-rx.com.
 """
 import argparse
+import functools
 import sys
 import tempfile
 from typing import List, Optional
@@ -27,23 +28,36 @@ from rx.client.commands import init
 from rx.client.commands import runner
 from rx.client.commands import stop
 from rx.client.commands import subscribe
+from rx.client.commands.command import CommandLine
 from rx.client.commands.workspace import workspace_info
 from rx.client.configuration import local
 
 
-def _get_version(args: List[str]) -> int:
-  del args
-  print(local.VERSION)
-  return 0
+class HelpCommand(command.Command):
+  def __init__(self, parser: argparse.ArgumentParser, cmdline: CommandLine):
+    self._parser = parser
+    super().__init__(cmdline)
+
+  def _run(self) -> int:
+    self._parser.print_help()
+    return 0
+
+
+class VersionCommand(command.Command):
+  def _run(self) -> int:
+    print(local.VERSION)
+    return 0
 
 
 def get_subcommand_parser(
     parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
   subparsers = parser.add_subparsers(required=False)
+
+  help_cmd = functools.partial(HelpCommand, parser)
   (
     subparsers
     .add_parser('help', help='Show help message for a given command')
-    .set_defaults(func=lambda _: parser.print_help())
+    .set_defaults(cmd=help_cmd)
   )
   init.add_parser(subparsers)
   runner.add_parser(subparsers)
@@ -53,7 +67,7 @@ def get_subcommand_parser(
   (
     subparsers
     .add_parser('version', help='Gets the version of the rx client')
-    .set_defaults(func=_get_version)
+    .set_defaults(cmd=VersionCommand)
   )
   return subparsers
 
@@ -66,7 +80,7 @@ def main(cmdline: command.CommandLine):
   logging.info('Running "%s"', cmdline.original)
 
   try:
-    cmd: command.Command = cmdline.ns.cmd(cmdline.remainder)
+    cmd: command.Command = cmdline.ns.cmd(cmdline)
     cmd.run()
   except KeyboardInterrupt:
     return worker_client.SIGINT_CODE

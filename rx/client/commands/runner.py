@@ -1,5 +1,4 @@
 import argparse
-from typing import List
 
 from absl import logging
 
@@ -12,9 +11,9 @@ from rx.client.configuration import config_base
 
 class RunCommand(command.Command):
 
-  def __init__(self, argv: List[str]):
-    super().__init__(argv)
-    self._argv = argv
+  def __init__(self, cmdline: command.CommandLine):
+    super().__init__(cmdline)
+    self._argv = cmdline.remainder
 
   def _run(self) -> int:
     with grpc_helper.get_channel(self.remote_config.worker_addr) as ch:

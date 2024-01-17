@@ -1,3 +1,4 @@
+import argparse
 import io
 import pathlib
 import shutil
@@ -8,8 +9,15 @@ from unittest import mock
 from absl.testing import absltest
 from absl.testing import flagsaver
 
+from rx.client.commands import command
 from rx.client.commands import init
 from rx.client.configuration import local
+
+_CMDLINE = command.CommandLine(
+  ns=argparse.Namespace(),
+  remainder=[],
+  original=[],
+)
 
 
 class InitTests(unittest.TestCase):
@@ -26,14 +34,14 @@ class InitTests(unittest.TestCase):
     rxroot.mkdir(exist_ok=True)
 
     with flagsaver.flagsaver(rxroot=str(rxroot)):
-      got = init.InitCommand([])
+      got = init.InitCommand(_CMDLINE)
 
-    self.assertEqual(got.rxroot, rxroot)
+    self.assertEqual(got._rxroot, rxroot)
 
   def test_no_rxroot(self):
-    got = init.InitCommand([])
+    got = init.InitCommand(_CMDLINE)
 
-    self.assertEqual(got.rxroot, pathlib.Path.cwd())
+    self.assertEqual(got._rxroot, pathlib.Path.cwd())
 
   def test_existing_rxroot_message(self):
     tmpdir = absltest.get_default_test_tmpdir()
@@ -44,7 +52,7 @@ class InitTests(unittest.TestCase):
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
         mock.patch.object(sys, 'stdin', io.StringIO('y\ny')):
-      cmd = init.InitCommand([])
+      cmd = init.InitCommand(_CMDLINE)
       cmd._show_init_message()
 
     got = mock_stdout.getvalue()
@@ -62,7 +70,7 @@ class InitTests(unittest.TestCase):
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
         mock.patch.object(sys, 'stdin', io.StringIO('y')):
-      cmd = init.InitCommand([])
+      cmd = init.InitCommand(_CMDLINE)
       cmd._show_init_message()
 
     got = mock_stdout.getvalue()
