@@ -66,7 +66,8 @@ def main(cmdline: command.CommandLine):
   logging.info('Running "%s"', cmdline.original)
 
   try:
-    return cmdline.ns.func(cmdline.remainder)
+    cmd: command.Command = cmdline.ns.cmd(cmdline.remainder)
+    cmd.run()
   except KeyboardInterrupt:
     return worker_client.SIGINT_CODE
 

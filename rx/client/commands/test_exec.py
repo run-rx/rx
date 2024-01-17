@@ -13,7 +13,7 @@ class ExecTests(unittest.TestCase):
     got = exec.parse_flags_with_usage(['rx', 'init', '--dry-run'])
 
     want = command.CommandLine(
-      ns=argparse.Namespace(func=init._run_cmd),
+      ns=argparse.Namespace(cmd=init.InitCommand),
       remainder=[],
       original=['rx', 'init', '--dry-run']
     )
@@ -23,7 +23,7 @@ class ExecTests(unittest.TestCase):
     got = exec.parse_flags_with_usage(['rx', 'ls', '-l'])
 
     want = command.CommandLine(
-      ns=argparse.Namespace(func=runner._run_cmd),
+      ns=argparse.Namespace(cmd=runner.RunCommand),
       remainder=['ls', '-l'],
       original=['rx', 'ls', '-l']
     )

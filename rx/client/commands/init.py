@@ -21,8 +21,8 @@ _DRY_RUN = flags.DEFINE_bool(
 class InitCommand(command.Command):
   """Initialize (or reinitialize) the remote."""
 
-  def __init__(self):
-    super().__init__()
+  def __init__(self, argv: List[str]):
+    super().__init__(argv)
     if self._rxroot:
       self._config_exists = local.get_local_config_path(self._rxroot).exists()
       self._user_info_exists = not login.needs_login(self._rxroot)
@@ -132,17 +132,11 @@ Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
       return e.code
 
 
-def _run_cmd(args: List[str]) -> int:
-  del args
-  cmd = InitCommand()
-  return cmd.run()
-
-
 def add_parser(subparsers: argparse._SubParsersAction):
   (
     subparsers
     .add_parser('init', help='Allocates and sets up a new workspace in AWS')
-    .set_defaults(func=_run_cmd)
+    .set_defaults(cmd=InitCommand)
   )
 
 

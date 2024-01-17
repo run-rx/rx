@@ -13,7 +13,7 @@ from rx.client.configuration import config_base
 class RunCommand(command.Command):
 
   def __init__(self, argv: List[str]):
-    super().__init__()
+    super().__init__(argv)
     self._argv = argv
 
   def _run(self) -> int:
@@ -72,14 +72,9 @@ class RunCommand(command.Command):
     return result.code
 
 
-def _run_cmd(args: List[str]) -> int:
-  cmd = RunCommand(args)
-  return cmd.run()
-
-
 def add_parser(subparsers: argparse._SubParsersAction):
   (
     subparsers
     .add_parser('run', help='Runs a command')
-    .set_defaults(func=_run_cmd)
+    .set_defaults(cmd=RunCommand)
   )

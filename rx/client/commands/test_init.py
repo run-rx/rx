@@ -26,12 +26,12 @@ class InitTests(unittest.TestCase):
     rxroot.mkdir(exist_ok=True)
 
     with flagsaver.flagsaver(rxroot=str(rxroot)):
-      got = init.InitCommand()
+      got = init.InitCommand([])
 
     self.assertEqual(got.rxroot, rxroot)
 
   def test_no_rxroot(self):
-    got = init.InitCommand()
+    got = init.InitCommand([])
 
     self.assertEqual(got.rxroot, pathlib.Path.cwd())
 
@@ -44,7 +44,7 @@ class InitTests(unittest.TestCase):
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
         mock.patch.object(sys, 'stdin', io.StringIO('y\ny')):
-      cmd = init.InitCommand()
+      cmd = init.InitCommand([])
       cmd._show_init_message()
 
     got = mock_stdout.getvalue()
@@ -62,7 +62,7 @@ class InitTests(unittest.TestCase):
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
         mock.patch.object(sys, 'stdin', io.StringIO('y')):
-      cmd = init.InitCommand()
+      cmd = init.InitCommand([])
       cmd._show_init_message()
 
     got = mock_stdout.getvalue()

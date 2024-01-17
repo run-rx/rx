@@ -30,17 +30,11 @@ class StopCommand(command.Command):
     return 0
 
 
-def _run_cmd(args: List[str]) -> int:
-  del args
-  cmd = StopCommand()
-  return cmd.run()
-
-
 def add_parser(subparsers: argparse._SubParsersAction):
   (
     subparsers
     .add_parser('stop', help='Stops the current instance')
-    .set_defaults(func=_run_cmd)
+    .set_defaults(cmd=StopCommand)
   )
 
 

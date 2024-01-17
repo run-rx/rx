@@ -10,7 +10,6 @@ from rx.client import grpc_helper
 from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
-from rx.proto import rx_pb2
 
 
 class WorkspaceInfoCommand(command.Command):
@@ -40,17 +39,11 @@ Commands run this month:
     return 0
 
 
-def _run_cmd(args: List[str]) -> int:
-  del args
-  cmd = WorkspaceInfoCommand()
-  return cmd.run()
-
-
 def add_parser(subparsers: argparse._SubParsersAction):
   (
     subparsers
     .add_parser('workspace-info', help='Gets info about the current workspace')
-    .set_defaults(func=_run_cmd)
+    .set_defaults(cmd=WorkspaceInfoCommand)
   )
 
 
