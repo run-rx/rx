@@ -28,13 +28,13 @@ from rx.client.commands import init
 from rx.client.commands import runner
 from rx.client.commands import stop
 from rx.client.commands import subscribe
-from rx.client.commands.command import CommandLine
-from rx.client.commands.workspace import workspace_info
+from rx.client.commands import workspace
 from rx.client.configuration import local
 
 
 class HelpCommand(command.Command):
-  def __init__(self, parser: argparse.ArgumentParser, cmdline: CommandLine):
+  def __init__(
+      self, parser: argparse.ArgumentParser, cmdline: command.CommandLine):
     self._parser = parser
     super().__init__(cmdline)
 
@@ -63,7 +63,7 @@ def get_subcommand_parser(
   runner.add_parser(subparsers)
   stop.add_parser(subparsers)
   subscribe.add_parsers(subparsers)
-  workspace_info.add_parser(subparsers)
+  workspace.add_parser(subparsers)
   (
     subparsers
     .add_parser('version', help='Gets the version of the rx client')
