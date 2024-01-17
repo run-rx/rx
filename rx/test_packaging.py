@@ -77,11 +77,11 @@ class TomlTests(unittest.TestCase):
     got = list(self._pyproject['tool']['poetry']['dependencies'].keys())
     got.remove('python')
 
-    reqs = open('requirements.txt', 'r')
-    expected = [x.split('==')[0] for x in reqs.readlines()]
-    for rr in REMOVE_REQS:
-      expected.remove(rr)
-    self.assertEqual(got, expected)
+    with open('requirements.txt', 'r') as reqs:
+      expected = [x.split('==')[0] for x in reqs.readlines()]
+      for rr in REMOVE_REQS:
+        expected.remove(rr)
+      self.assertEqual(got, expected)
 
 
 def _get_latest_tgz() -> Tuple[version.Version, str]:
