@@ -1,9 +1,20 @@
+import argparse
+import dataclasses
 import pathlib
 import sys
+from typing import List
 
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.client.configuration import remote
+
+
+@dataclasses.dataclass(frozen=True)
+class CommandLine:
+  ns: argparse.Namespace
+  remainder: List[str]
+  original: List[str]
+
 
 class Command:
   def __init__(self) -> None:
@@ -33,7 +44,7 @@ class Command:
     except config_base.ConfigNotFoundError as e:
       path = 'cwd' if e.path == '.' else e.path
       print(
-        f'No workspace found at {e.path}, {e}.', file=sys.stderr, flush=True)
+        f'No workspace found at {path}, {e}.', file=sys.stderr, flush=True)
       return -1
 
   def _run(self) -> int:

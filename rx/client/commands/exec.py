@@ -15,19 +15,19 @@ Run 'rx --help' for more options or visit https://docs.run-rx.com.
 import argparse
 import sys
 import tempfile
-from typing import List
+from typing import List, Optional
 
 from absl import app
-from absl import flags
 from absl import logging
 from absl.flags import argparse_flags
 
 from rx.client import worker_client
+from rx.client.commands import command
 from rx.client.commands import init
 from rx.client.commands import runner
 from rx.client.commands import stop
 from rx.client.commands import subscribe
-from rx.client.commands import workspace_info
+from rx.client.commands.workspace import workspace_info
 from rx.client.configuration import local
 
 
@@ -38,8 +38,8 @@ def _get_version(args: List[str]) -> int:
 
 
 def get_subcommand_parser(
-    parser: argparse_flags.ArgumentParser) -> argparse._SubParsersAction:
-  subparsers = parser.add_subparsers()
+    parser: argparse.ArgumentParser) -> argparse._SubParsersAction:
+  subparsers = parser.add_subparsers(required=False)
   (
     subparsers
     .add_parser('help', help='Show help message for a given command')
@@ -58,42 +58,56 @@ def get_subcommand_parser(
   return subparsers
 
 
-def main(argv):
+def main(cmdline: command.CommandLine):
   handler = logging.get_absl_handler()
   assert handler
   handler.python_handler.use_absl_log_file(
     program_name='rx', log_dir=tempfile.gettempdir())
-  logging.info('Running "%s"', argv)
+  logging.info('Running "%s"', cmdline.original)
 
+  try:
+    return cmdline.ns.func(cmdline.remainder)
+  except KeyboardInterrupt:
+    return worker_client.SIGINT_CODE
+
+
+def parse_flags_with_usage(argv) -> command.CommandLine:
+  """The output of this is passed to main."""
   parser = argparse_flags.ArgumentParser(
     description=(
       'rx is a cli interface for seamless hybrid development. Develop locally, '
       'then run locally or in the cloud.'))
   subparsers = get_subcommand_parser(parser)
+
   if len(argv) == 1:
     parser.print_help()
-    return -1
+    sys.exit(-1)
 
-  if argv[1] in subparsers.choices:
-    ns, remainder = parser.parse_known_args(argv[1:])
-    try:
-      return ns.func(remainder)
-    except KeyboardInterrupt:
-      return worker_client.SIGINT_CODE
-  else:
-    # argparse doesn't like it when it doesn't recognize anything.
-    return runner.RunCommand(argv[1:]).run()
+  # We want some behavior that argparse doesn't really support: implied "--"
+  # and then consuming the rest of the arguments. Thus, find the first required
+  # argument (one not prefixed with "-") and check if it's a subcommand. If it
+  # is _not_, create a "run" command line manually and then handle parsing
+  # normally.
+  to_parse = argv[1:]  # Remove 'rx'
+  cmd = get_first_required_arg(to_parse)
+  if cmd not in subparsers.choices:
+    to_parse = ['run'] + to_parse
+
+  ns, remainder = parser.parse_known_args(to_parse)
+  return command.CommandLine(
+    ns=ns,
+    remainder=remainder,
+    original=argv,
+  )
 
 
-def parse_flags_with_usage(args):
-  try:
-    return flags.FLAGS(args)
-  except flags.Error as error:
-    cmd = ' '.join(args[1:])
-    print(
-      f'{error}\n\nIf you are attempting to run a command on a remote machine, '
-      f'try using quotes:\n\n\trx \'{cmd}\'')
-    sys.exit(1)
+def get_first_required_arg(argv: List[str]) -> Optional[str]:
+  """Gets the first arg not prefixed with '-'."""
+  for arg in argv:
+    if arg.startswith('-'):
+      continue
+    return arg
+  return None
 
 
 # Run from rx.__main__.
