@@ -171,6 +171,24 @@ message SetUsernameRequest {
   string username = 1;
 }
 
+message CommitStreamRequest {
+  string workspace_id = 1;
+}
+
+message CommitStreamResponse {
+  Result result = 1;
+  DockerImageProgress push_progress = 2;
+}
+
+message CommitFinishRequest {
+  string workspace_id = 1;
+}
+
+message CommitFinishResponse {
+  Result result = 1;
+  Image image = 2;
+}
+
 message StopRequest {
   string workspace_id = 1;
   bool save = 2;
@@ -200,6 +218,8 @@ service ExecutionService {
 
 service SetupService {
   rpc CheckSubscription(google.protobuf.Empty) returns (GenericResponse) {}
+  rpc CommitStream(CommitStreamRequest) returns (stream CommitStreamResponse) {}
+  rpc CommitFinish(CommitFinishRequest) returns (CommitFinishResponse) {}
   rpc GetSubscribeInfo(google.protobuf.Empty)
     returns (GetSubscribeInfoResponse) {}
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}

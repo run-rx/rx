@@ -2,6 +2,7 @@ import datetime
 import sys
 import time
 from typing import cast, Any, Dict, Generator, Iterable, Optional, Tuple
+import uuid
 
 from absl import logging
 from google.protobuf import empty_pb2
@@ -152,6 +153,31 @@ Then retry this command.
       with remote.WritableRemote(self._local_cfg.cwd) as r:
         r['worker_addr'] = status.worker_addr
     return status.result
+
+  def commit(self, workspace_id: str) -> Dict[str, Any]:
+    logging.info('Storing workspace %s', workspace_id)
+    req = rx_pb2.CommitStreamRequest(workspace_id=workspace_id)
+    resp = self._stub.CommitStream(req, metadata=self._metadata)
+    def get_progress(
+        resp: Iterable[rx_pb2.CommitStreamResponse]
+    ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
+      for r in resp:
+        if r.result.code != 0:
+          raise TrexError(r.result.message, r.result.code)
+        if r.HasField('push_progress'):
+          yield r.push_progress
+    result = progress_bar.show_progress_bars(get_progress(resp))
+    if result and result.code != 0:
+      raise TrexError(f'Error saving workspace: {result.message}', result)
+
+    finish_req = rx_pb2.CommitFinishRequest(workspace_id=workspace_id)
+    response = self._stub.CommitFinish(finish_req, metadata=self._metadata)
+    result = response.result
+    if result and result.code != 0:
+      raise TrexError(result.message, result)
+    image = json_format.MessageToDict(
+      response.image, preserving_proto_field_name=True)
+    return {'image': image}
 
   def stop(self, workspace_id: str) -> Dict[str, Any]:
     logging.info('Stopping workspace %s', workspace_id)
