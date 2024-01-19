@@ -6,12 +6,6 @@ from rx.client.commands.workspace import set_acls
 
 
 def add_parser(subparsers: argparse._SubParsersAction):
-  (
-    subparsers
-    .add_parser('workspace-info', help='Workspace handling commands')
-    .set_defaults(cmd=info.InfoCommand)
-  )
-
   ws_cmd = subparsers.add_parser(
     'ws', help='Workspace handling commands')
   subparsers = ws_cmd.add_subparsers(required=True)
@@ -24,9 +18,7 @@ def add_parser(subparsers: argparse._SubParsersAction):
     'info', help='Gets info about the current workspace')
   info_cmd.set_defaults(cmd=info.InfoCommand)
 
-  acl_cmd = subparsers.add_parser(
-    'set-acls', help='Stores the current workspace')
-  acl_cmd.set_defaults(cmd=set_acls.AclsCommand)
+  set_acls.add_parser(subparsers)
 
 
 if __name__ == '__main__':

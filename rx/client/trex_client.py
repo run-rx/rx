@@ -179,6 +179,12 @@ Then retry this command.
       response.image, preserving_proto_field_name=True)
     return {'image': image}
 
+  def set_acls(self, req: rx_pb2.SetAclsRequest) -> rx_pb2.SetAclsResponse:
+    response = self._stub.SetAcls(req, metadata=self._metadata)
+    if response.result.code != 0:
+      raise TrexError(response.result.message, response.result.code)
+    return response
+
   def stop(self, workspace_id: str) -> Dict[str, Any]:
     logging.info('Stopping workspace %s', workspace_id)
     req = rx_pb2.StopRequest(workspace_id=workspace_id, save=True)

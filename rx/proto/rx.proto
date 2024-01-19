@@ -167,6 +167,18 @@ message UnfreezeResponse {
   string worker_addr = 2;
 }
 
+message SetAclsRequest {
+  string workspace_id = 1;
+  string visibility = 2;
+  string add_reader = 3;
+}
+
+message SetAclsResponse {
+  Result result = 1;
+  string visibility = 2;
+  repeated string readers = 3;
+}
+
 message SetUsernameRequest {
   string username = 1;
 }
@@ -227,6 +239,7 @@ service SetupService {
     returns (GetWorkspaceInfoResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
   rpc Unfreeze(UnfreezeRequest) returns (stream UnfreezeResponse) {}
+  rpc SetAcls(SetAclsRequest) returns (SetAclsResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}
   rpc Unsubscribe(google.protobuf.Empty) returns (GenericResponse) {}
