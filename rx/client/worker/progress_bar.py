@@ -32,7 +32,9 @@ class ProgressBar:
     self._bar = tqdm.tqdm(
       desc=f'{pp.status} layer {pp.id}',
       total=pp.total,
-      unit=' bytes')
+      unit=' bytes',
+      unit_scale=True,
+      bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')
     self._is_done = False
 
   def close(self):

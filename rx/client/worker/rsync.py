@@ -1,5 +1,4 @@
 from collections import abc
-import errno
 import pathlib
 import subprocess
 import tempfile
@@ -86,6 +85,11 @@ class RsyncClient:
   def to_remote(self) -> int:
     """Copies files/dirs to remote."""
     daemon = f'{self._daemon_addr}::{self._upload_path}'
+    # TODO: add --progress and provide info about what rsync is copying as it
+    # goes. rsync's progress format looks like:
+    #
+    # some/path/to/file
+    #     519 100%    1.12kB/s    0:00:00 (xfer#2709, to-check=2/3377)
     cmd = [
         self._rsync_path,
         '--archive',

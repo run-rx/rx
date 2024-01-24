@@ -154,9 +154,18 @@ Then retry this command.
         r['worker_addr'] = status.worker_addr
     return status.result
 
-  def commit(self, workspace_id: str) -> Dict[str, Any]:
+  def commit(
+      self,
+      workspace_id: str,
+      name: Optional[str] = None,
+      organization: Optional[str] = None,
+    ) -> Dict[str, Any]:
     logging.info('Storing workspace %s', workspace_id)
     req = rx_pb2.CommitStreamRequest(workspace_id=workspace_id)
+    if organization:
+      req.organization = organization
+    if name:
+      req.name = name
     resp = self._stub.CommitStream(req, metadata=self._metadata)
     def get_progress(
         resp: Iterable[rx_pb2.CommitStreamResponse]

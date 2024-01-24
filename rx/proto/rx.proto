@@ -185,6 +185,8 @@ message SetUsernameRequest {
 
 message CommitStreamRequest {
   string workspace_id = 1;
+  string organization = 2;
+  string name = 3;
 }
 
 message CommitStreamResponse {

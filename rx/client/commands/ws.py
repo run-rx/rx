@@ -10,9 +10,7 @@ def add_parser(subparsers: argparse._SubParsersAction):
     'ws', help='Workspace handling commands')
   subparsers = ws_cmd.add_subparsers(required=True)
 
-  commit_cmd = subparsers.add_parser(
-    'commit', help='Stores the current workspace')
-  commit_cmd.set_defaults(cmd=commit.CommitCommand)
+  commit.add_parser(subparsers)
 
   info_cmd = subparsers.add_parser(
     'info', help='Gets info about the current workspace')
