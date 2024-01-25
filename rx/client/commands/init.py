@@ -77,7 +77,11 @@ Press y to continue:""", 'y')
     self._show_init_message()
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')
-    config = local.create_local_config(self._rxroot)
+    try:
+      config = local.create_local_config(self._rxroot)
+    except FileExistsError as e:
+      print(e)
+      return -1
     client = None
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:

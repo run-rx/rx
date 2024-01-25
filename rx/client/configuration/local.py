@@ -44,7 +44,7 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
       with remote_path.open(mode='rt', encoding='utf-8') as fh:
         remote_content = fh.read()
         self._set_color(remote_content)
-    except FileExistsError:
+    except (FileExistsError, FileNotFoundError):
       raise FileExistsError(
         f'Could not find remote config: {remote_path} does not exist')
 
@@ -144,7 +144,8 @@ def env_dict_to_pb(env_dict: Dict[str, Any]) -> rx_pb2.Environment:
   if 'image' in env_dict:
     image_dict = env_dict['image']
     image_pb = rx_pb2.Image(**{
-      k: v for k, v in image_dict.items() if k != 'environment_variables'
+      k: str(image_dict[k]) for k in ['registry', 'repository', 'tag']
+      if k in image_dict
     })
     if 'environment_variables' in image_dict:
       for k, v in image_dict['environment_variables'].items():
@@ -177,7 +178,7 @@ def _install_local_files(rxroot: pathlib.Path):
   is_yaml = (
     default_target.endswith('.yaml') or
     default_target.endswith('.yml'))
-  if default_config.exists():
+  if default_config.is_symlink():
     if is_yaml:
       # Don't undo someone else's config, unless it's old.
       return
