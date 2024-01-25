@@ -14,7 +14,7 @@ import yaml
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.16'
+VERSION = '0.0.17'
 
 IGNORE = pathlib.Path('.rxignore')
 
