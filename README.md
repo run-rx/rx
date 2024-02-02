@@ -1,8 +1,9 @@
 # Welcome to rx!
 
-[rx](https://www.run-rx.com) is a command-line tool to make remote execution
-easy. It integrates with whatever tools you're currently using and gives you a
-long-running VM in the cloud that is kept in sync with your local machine.
+[rx](https://www.run-rx.com) is a command-line tool that makes it easy to
+create, use, and share development environments. It integrates with whatever
+tools you're currently using and gives you a long-running VM in the cloud that
+is kept in sync with your local machine.
 
 ## Installation
 
