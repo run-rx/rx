@@ -1,10 +1,13 @@
 """This detects what languages a project is using."""
+import dataclasses
+from typing import List
+
 from rx.trex.toolchain import manifest
 
 _KNOWN_EXTENSION = {
   '.c': 'c',
   '.cc': 'cpp',
-  '.go': 'go',
+  '.go': 'golang',
   '.java': 'java',
   '.js': 'node',
   '.jsx': 'node',
@@ -16,39 +19,39 @@ _KNOWN_EXTENSION = {
 }
 
 
+@dataclasses.dataclass(frozen=True)
+class DetectedTool:
+  name: str
+  why: str = dataclasses.field(hash=False, compare=False)
+
+
 class Detector:
   """Detects which language a repo is likely primarily using."""
   def __init__(self, m: manifest.Manifest) -> None:
     self._manifest = m
-    self._why = None
 
-  def get_language(self) -> str:
+  def get_languages(self) -> List[DetectedTool]:
     """Returns the likely language for the project."""
-    self._why = 'package manager'
+    detected = set()
+    why = 'package manager'
     if (
       'environment.yaml' in self._manifest or
       'environment.yml' in self._manifest):
-      return 'conda'
+      detected.add(DetectedTool(name='conda', why=why))
     if 'requirements.txt' in self._manifest:
-      return 'python'
+      detected.add(DetectedTool(name='pip', why=why))
     if 'pom.xml' in self._manifest:
-      return 'maven'
+      detected.add(DetectedTool(name='maven', why=why))
     if 'package.json' in self._manifest:
-      return 'node'
+      detected.add(DetectedTool(name='node', why=why))
     if 'Cargo.toml' in self._manifest:
-      return 'rust'
+      detected.add(DetectedTool(name='rust', why=why))
 
     # We could not find a language via package manager options. Look for
     # suffixes.
-    self._why = 'file extensions'
+    why = 'file extension'
     for lang in self._manifest.most_popular_extensions():
       if lang in _KNOWN_EXTENSION:
-        return _KNOWN_EXTENSION[lang]
+        detected.add(DetectedTool(name=_KNOWN_EXTENSION[lang], why=why))
 
-    self._why = 'fallback'
-    return 'unknown'
-
-  def get_why(self) -> str:
-    """Returns why we chose a particular language."""
-    assert self._why, 'Must call get_language first'
-    return self._why
+    return list(detected)
