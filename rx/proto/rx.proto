@@ -20,7 +20,7 @@ message Image {
 
 message Remote {
   Hardware hardware = 1;
-  rx.trex.Toolchain toolchain = 2;
+  repeated rx.trex.Tool toolchain = 2;
 }
 
 // Converting this to YAML should give a valid rx config.
@@ -30,7 +30,7 @@ message Environment {
 }
 
 message GeneratedConfig {
-  Environment env = 1;
+  Environment config = 1;
   // Something human-readable to describe this config.
   string human_env_name = 2;
   string image_decision = 3;
@@ -139,7 +139,7 @@ message InitRequest {
   string project_name = 1;
   RsyncSource rsync_source = 2;
   Environment target_env = 3;
-  rx.trex.Toolchain toolchain = 4;
+  repeated rx.trex.Tool toolchain = 4;
 }
 
 message InitResponse {

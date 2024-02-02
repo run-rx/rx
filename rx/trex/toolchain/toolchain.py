@@ -1,6 +1,6 @@
 import dataclasses
 import datetime
-import functools
+from typing import List
 
 from google.protobuf import json_format
 import yaml
@@ -22,28 +22,25 @@ class Toolchain:
     self._local_cfg = local_cfg
     self._provided_config = provided_config
 
-  @functools.lru_cache()
+  @property
   def has_toolchain(self) -> bool:
     return (
       self._provided_config.HasField('image') and
       bool(self._provided_config.image.repository))
 
-  def get_toolchain(self, ):
+  def get_toolchain(self) -> List[trex_pb2.Tool]:
     m = manifest.Manifest(local_fs.get_manifest(self._local_cfg))
     d = lang_detector.Detector(m)
-
-    return trex_pb2.Toolchain(
-      tools=[trex_pb2.Tool(**dataclasses.asdict(t)) for t in d.get_languages()],
-    )
+    return [trex_pb2.Tool(name=t.name) for t in d.get_languages()]
 
   def print_config(self, gc: rx_pb2.GeneratedConfig):
-    config = yaml.safe_dump(json_format.MessageToDict(gc.env))
+    config = yaml.safe_dump(json_format.MessageToDict(gc.config))
     config_file = self._write_config(config, gc.human_env_name)
     if gc.image_decision == 'fallback':
       print('Could not determine project environment, using fallback image:\n')
     else:
       print('Automatically generated the following config:\n')
-    print(f'{config}\n\nWritten to {config_file}')
+    print(f'{config}\nWritten to {config_file}\n')
 
   def _write_config(self, config: str, config_name: str) -> str:
     remotes = self._local_cfg.cwd / local.REMOTE_DIR

@@ -4,10 +4,5 @@ package rx.trex;
 
 message Tool {
   string name = 1;
-  string why = 2;
   string version = 3;
-}
-
-message Toolchain {
-  repeated Tool tools = 1;
 }

@@ -89,7 +89,8 @@ class Client:
     # set up.
     tc = toolchain.Toolchain(self._local_cfg, target_env)
     if not tc.has_toolchain:
-      req.toolchain.CopyFrom(tc.get_toolchain())
+      req.toolchain.extend(tc.get_toolchain())
+      logging.info('Toolchain: %s', req.toolchain)
 
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
@@ -113,7 +114,7 @@ Then retry this command.
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
-    if tc.has_toolchain:
+    if not tc.has_toolchain:
       tc.print_config(resp.using_config)
 
     with remote.WritableRemote(self._local_cfg.cwd) as r:
