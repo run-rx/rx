@@ -14,9 +14,9 @@ from rx.client import login
 from rx.client import output_handler
 from rx.client.configuration import local
 from rx.client.configuration import remote
-from rx.client.shared import progress_bar
-from rx.client.worker import executor
-from rx.client.worker import rsync
+from rx.shared import progress_bar
+from rx.worker import executor
+from rx.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 

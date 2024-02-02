@@ -11,7 +11,7 @@ from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
-from rx.client.trex.toolchain import local_fs
+from rx.trex.toolchain import local_fs
 
 
 class InitCommand(command.Command):

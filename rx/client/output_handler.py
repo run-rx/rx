@@ -2,7 +2,7 @@
 import pathlib
 from typing import Set
 
-from rx.client.worker import rsync
+from rx.worker import rsync
 from rx.proto import rx_pb2
 
 

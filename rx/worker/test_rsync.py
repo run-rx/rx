@@ -6,8 +6,8 @@ from unittest import mock
 from absl import flags
 from absl.testing import absltest
 
-from rx.client.worker import rsync
 from rx.client.configuration import local
+from rx.worker import rsync
 
 FLAGS = flags.FLAGS
 
