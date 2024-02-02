@@ -31,7 +31,7 @@ class Detector:
     self._manifest = m
 
   def get_languages(self) -> List[DetectedTool]:
-    """Returns the likely language for the project."""
+    """Returns the likely languages/tools for the project."""
     detected = set()
     why = 'package manager'
     if (

@@ -2,12 +2,12 @@ import datetime
 import sys
 import time
 from typing import cast, Any, Dict, Generator, Iterable, Optional, Tuple
-import uuid
 
 from absl import logging
 from google.protobuf import empty_pb2
 from google.protobuf import json_format
 import grpc
+import yaml
 
 from rx.client import grpc_helper
 from rx.client import login
@@ -17,6 +17,7 @@ from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.shared import progress_bar
+from rx.trex.toolchain import toolchain
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
@@ -84,12 +85,17 @@ class Client:
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
     )
+    # If the image isn't set, take a slower path to detect what environment to
+    # set up.
+    tc = toolchain.Toolchain(self._local_cfg, target_env)
+    if not tc.has_toolchain:
+      req.toolchain.CopyFrom(tc.get_toolchain())
+
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
     sys.stdout.flush()
     try:
-      # Five minute timeout.
-      resp = self._stub.Init(req, metadata=self._metadata, timeout=(5 * 60))
+      resp: rx_pb2.InitResponse = self._stub.Init(req, metadata=self._metadata)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
@@ -107,6 +113,8 @@ Then retry this command.
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
+    if tc.has_toolchain:
+      tc.print_config(resp.using_config)
 
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id

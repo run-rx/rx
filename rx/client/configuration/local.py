@@ -17,14 +17,14 @@ from rx.proto import rx_pb2
 VERSION = '0.0.17'
 
 IGNORE = pathlib.Path('.rxignore')
+REMOTE_DIR = config_base.RX_DIR / 'remotes'
 
 _REMOTE = flags.DEFINE_string(
   'remote', None,
   'The path to the remote configuration file to use (see .rx/README.md).')
 _RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
 
-_REMOTE_DIR = config_base.RX_DIR / 'remotes'
-_DEFAULT_REMOTE = _REMOTE_DIR / 'default'
+_DEFAULT_REMOTE = REMOTE_DIR / 'default'
 
 
 class LocalConfigWriter(config_base.ReadWriteConfig):
@@ -136,23 +136,31 @@ def get_grpc_metadata() -> Tuple[Tuple[str, str]]:
   return (('cv', VERSION),)
 
 
-def env_dict_to_pb(env_dict: Dict[str, Any]) -> rx_pb2.Environment:
+def env_dict_to_pb(env_dict: Optional[Dict[str, Any]]) -> rx_pb2.Environment:
   env_pb = rx_pb2.Environment()
+  if not env_dict:
+    # Empty config comes in as None.
+    return env_pb
   if 'remote' in env_dict:
     remote_pb = rx_pb2.Remote(**env_dict['remote'])
     env_pb.remote.CopyFrom(remote_pb)
   if 'image' in env_dict:
     image_dict = env_dict['image']
-    image_pb = rx_pb2.Image(**{
-      k: str(image_dict[k]) for k in ['registry', 'repository', 'tag']
-      if k in image_dict
-    })
+    image_pb = rx_pb2.Image()
+    if 'registry' in image_dict:
+      image_pb.registry = image_dict['registry']
+    if 'repository' in image_dict:
+      image_pb.repository = image_dict['repository']
+    if 'tag' in image_dict:
+      image_pb.tag = image_dict['tag']
     if 'environment_variables' in image_dict:
       for k, v in image_dict['environment_variables'].items():
         if isinstance(v, bool):
           # YAML is a bit too helpful about type conversions.
           v = 'true' if v else 'false'
         image_pb.environment_variables[k] = str(v)
+    if 'ports' in image_dict:
+      image_pb.ports.extend(image_dict['ports'])
     env_pb.image.CopyFrom(image_pb)
   return env_pb
 
@@ -166,7 +174,7 @@ def _install_local_files(rxroot: pathlib.Path):
   config_dir.mkdir(exist_ok=True, parents=True)
   _install_file(install_dir, config_dir, 'README.md')
 
-  remotes = rxroot / _REMOTE_DIR
+  remotes = rxroot / REMOTE_DIR
   remotes.mkdir(exist_ok=True, parents=True)
 
   # Copy built-in configs.
