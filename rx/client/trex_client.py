@@ -17,7 +17,6 @@ from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.client.shared import progress_bar
-from rx.client.worker import rsync
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
@@ -61,9 +60,6 @@ class Client:
         c['username'] = username
         c['email'] = email
     return user.User(self._local_cfg.cwd, email)
-
-  def dry_run(self):
-    rsync.dry_run(self._local_cfg)
 
   def get_info(self, workspace_id: str) -> rx_pb2.GetWorkspaceInfoResponse:
     request = rx_pb2.GetWorkspaceInfoRequest(workspace_id=workspace_id)

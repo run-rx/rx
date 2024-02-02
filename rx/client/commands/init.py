@@ -11,6 +11,7 @@ from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
+from rx.client.trex.toolchain import local_fs
 
 
 class InitCommand(command.Command):
@@ -74,7 +75,9 @@ Press y to continue:""", 'y')
     return True
 
   def _run(self) -> int:
-    self._show_init_message()
+    is_dry_run = self._cmdline.ns.dry_run
+    if not is_dry_run:
+      self._show_init_message()
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')
     try:
@@ -82,14 +85,15 @@ Press y to continue:""", 'y')
     except FileExistsError as e:
       print(e)
       return -1
+
+    if is_dry_run:
+      local_fs.dry_run(config)
+      return 0
+
     client = None
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)
-        if self._cmdline.ns.dry_run:
-          client.dry_run()
-          return 0
-
         cont = self._set_up_user(client)
         if not cont:
           return 0
