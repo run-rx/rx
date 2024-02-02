@@ -1,14 +1,11 @@
 """All of the info we can get without going to the server."""
-import hashlib
 import pathlib
-import shutil
 import subprocess
 from typing import Any, Dict, Optional, Tuple
 import uuid
 
 from absl import flags
 from absl import logging
-import sty
 import yaml
 
 from rx.client.configuration import config_base
@@ -36,29 +33,9 @@ class LocalConfigWriter(config_base.ReadWriteConfig):
     self._workspace_dir = workspace_dir
 
   def setup_remote(self):
-    """Sets the "remote" field (and color) for the local config."""
+    """Sets the "remote" field for the local config."""
     remote = str(_REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE)
     self._config['remote'] = remote
-    remote_path = self._workspace_dir / remote
-    try:
-      with remote_path.open(mode='rt', encoding='utf-8') as fh:
-        remote_content = fh.read()
-        self._set_color(remote_content)
-    except (FileExistsError, FileNotFoundError):
-      raise FileExistsError(
-        f'Could not find remote config: {remote_path} does not exist')
-
-  def _set_color(self, s: str):
-    """Generate a random color based on the remote config."""
-    h = hashlib.blake2s(digest_size=3)
-    h.update(s.encode())
-    hash_val = int(h.hexdigest(), 16)
-    r = hash_val & 255
-    hash_val = hash_val >> 8
-    g = hash_val & 255
-    hash_val = hash_val >> 8
-    b = hash_val & 255
-    self._config['color'] = {'r': r, 'g': g, 'b': b}
 
 
 class LocalConfig(config_base.ReadOnlyConfig):
@@ -68,7 +45,6 @@ class LocalConfig(config_base.ReadOnlyConfig):
     super().__init__(get_local_config_path(working_dir))
     self._cwd = working_dir
     self.config_dir = self.cwd / config_base.RX_DIR
-    self._color = None
 
   @property
   def cwd(self) -> pathlib.Path:
@@ -82,7 +58,9 @@ class LocalConfig(config_base.ReadOnlyConfig):
     )
 
   def get_target_env(self) -> rx_pb2.Environment:
-    remote_file = self.cwd / self._config['remote']
+    remote_file: pathlib.Path = self.cwd / self._config['remote']
+    if not remote_file.exists():
+      return rx_pb2.Environment()
     try:
       with remote_file.open(mode='rt', encoding='utf-8') as fh:
         remote_config = yaml.safe_load(fh)
@@ -90,15 +68,9 @@ class LocalConfig(config_base.ReadOnlyConfig):
       raise ConfigError(f'Could not parse yaml in {remote_file}: {e}')
     return env_dict_to_pb(remote_config)
 
-  def color_str(self, s: str) -> str:
-    color = self._config['color']
-    fg = sty.fg(color['r'], color['g'], color['b'])
-    return f'{fg}{s}{sty.rs.fg}'
-
 
 def create_local_config(rxroot: pathlib.Path) -> LocalConfig:
   """Gets or creates .rx directory."""
-  _install_local_files(rxroot)
   config_dir = get_local_config_path(rxroot).parent
   config_dir.mkdir(exist_ok=True, parents=True)
   with LocalConfigWriter(rxroot) as c:
@@ -165,39 +137,6 @@ def env_dict_to_pb(env_dict: Optional[Dict[str, Any]]) -> rx_pb2.Environment:
   return env_pb
 
 
-def _install_local_files(rxroot: pathlib.Path):
-  install_dir = pathlib.Path(get_source_path() / 'install')
-
-  _install_file(install_dir, rxroot, IGNORE)
-
-  config_dir = rxroot / config_base.RX_DIR
-  config_dir.mkdir(exist_ok=True, parents=True)
-  _install_file(install_dir, config_dir, 'README.md')
-
-  remotes = rxroot / REMOTE_DIR
-  remotes.mkdir(exist_ok=True, parents=True)
-
-  # Copy built-in configs.
-  python_cpu = _install_file(install_dir, remotes, 'python-cpu.yaml')
-  _install_file(install_dir, remotes, 'python-gpu.yaml')
-  # Create soft link.
-  default_config = remotes / 'default'
-  default_target = str(default_config.resolve())
-  is_yaml = (
-    default_target.endswith('.yaml') or
-    default_target.endswith('.yml'))
-  if default_config.is_symlink():
-    if is_yaml:
-      # Don't undo someone else's config, unless it's old.
-      return
-    print(
-      f'Your default config points to {default_target}, which doesn\'t look '
-      f'like a yaml file. Updating it to {python_cpu}.')
-    default_config.unlink()
-  # .rx/remote/default -> python-cpu.yaml
-  default_config.symlink_to('python-cpu.yaml')
-
-
 def _get_rsync_path() -> str:
   """Make sure rsync is installed."""
   if _RSYNC_PATH.value:
@@ -227,15 +166,6 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
 def get_local_config_path(rxroot: pathlib.Path) -> pathlib.Path:
   """Return .rx/trex-dev.run-rx.com/config/local."""
   return config_base.get_config_dir(rxroot) / 'local'
-
-
-def _install_file(install_dir, config_dir, base_name) -> pathlib.Path:
-  """Installs a file if it doesn't already exist."""
-  source_path = install_dir / base_name
-  destination_path = config_dir / base_name
-  if not destination_path.exists():
-    shutil.copy(source_path, destination_path)
-  return destination_path
 
 
 class ConfigError(RuntimeError):
