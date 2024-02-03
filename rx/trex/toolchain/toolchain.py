@@ -1,7 +1,7 @@
-import dataclasses
 import datetime
 from typing import List
 
+from absl import logging
 from google.protobuf import json_format
 import yaml
 
@@ -34,12 +34,15 @@ class Toolchain:
     return [trex_pb2.Tool(name=t.name) for t in d.get_languages()]
 
   def print_config(self, gc: rx_pb2.GeneratedConfig):
+    if gc.unrecognized_tools:
+      logging.info(
+        'Ignoring tools %s', ', '.join(x.name for x in gc.unrecognized_tools))
     config = yaml.safe_dump(json_format.MessageToDict(gc.config))
     config_file = self._write_config(config, gc.human_env_name)
     if gc.image_decision == 'fallback':
       print('Could not determine project environment, using fallback image:\n')
     else:
-      print('Automatically generated the following config:\n')
+      print('Automatically generated the following environment:\n')
     print(f'{config}\nWritten to {config_file}\n')
 
   def _write_config(self, config: str, config_name: str) -> str:

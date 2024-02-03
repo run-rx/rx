@@ -34,6 +34,8 @@ message GeneratedConfig {
   // Something human-readable to describe this config.
   string human_env_name = 2;
   string image_decision = 3;
+  // A list of tools that weren't known by the server.
+  repeated rx.trex.Tool unrecognized_tools = 4;
 }
 
 message Delta {

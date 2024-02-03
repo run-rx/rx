@@ -7,7 +7,6 @@ from absl import logging
 from google.protobuf import empty_pb2
 from google.protobuf import json_format
 import grpc
-import yaml
 
 from rx.client import grpc_helper
 from rx.client import login
