@@ -20,17 +20,17 @@ class AclsCommand(command.TrexCommand):
   """
 
   def _run(self) -> int:
-    req = rx_pb2.SetAclsRequest(workspace_id=self.remote_config.workspace_id)
+    req = rx_pb2.SetAclsRequest(
+      workspace_id=self.remote_config.workspace_id,
+      resource_type=self._cmdline.ns.resource,
+    )
     if self._cmdline.ns.visibility:
       req.visibility = self._cmdline.ns.visibility
-    elif self._cmdline.ns.add_reader:
+    if self._cmdline.ns.add_reader:
       new_reader = self._cmdline.ns.add_reader
       req.add_reader = new_reader
-    else:
-      print(
-        'One of --visibility or --add-reader must be specified',
-        file=sys.stderr)
-      return -1
+    if self._cmdline.ns.add_writer:
+      req.add_writer = self._cmdline.ns.add_writer
 
     with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
       client = trex_client.create_authed_client(ch, self.local_config)
@@ -60,6 +60,12 @@ def add_parser(subparsers: argparse._SubParsersAction):
     'have read permissions.')
   group.add_argument(
     '--add-reader', dest='add_reader',
+    help='The username or organization ID to share this workspace with')
+  group.add_argument(
+    '--add-writer', dest='add_writer',
+    help='The username or organization ID to share this workspace with')
+  group.add_argument(
+    '--resource', choices=['workspace', 'image'], default='workspace',
     help='The username or organization ID to share this workspace with')
   acl_cmd.set_defaults(cmd=AclsCommand)
 

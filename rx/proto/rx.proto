@@ -177,8 +177,11 @@ message UnfreezeResponse {
 
 message SetAclsRequest {
   string workspace_id = 1;
-  string visibility = 2;
-  string add_reader = 3;
+  string resource_type = 2;
+  string resource_id = 3;
+  string visibility = 4;
+  string add_reader = 5;
+  string add_writer = 6;
 }
 
 message SetAclsResponse {
