@@ -1,4 +1,5 @@
 """All of the info we can get without going to the server."""
+import dataclasses
 import pathlib
 import subprocess
 from typing import Any, Dict, Optional, Tuple
@@ -24,31 +25,14 @@ _RSYNC_PATH = flags.DEFINE_string('rsync_path', None, 'Path to rsync binary')
 _DEFAULT_REMOTE = REMOTE_DIR / 'default'
 
 
-class LocalConfigWriter(config_base.ReadWriteConfig):
-  """This holds all of the configuration options that can be determined from
-  the local machine."""
-
-  def __init__(self, workspace_dir: pathlib.Path):
-    super().__init__(get_local_config_path(workspace_dir))
-    self._workspace_dir = workspace_dir
-
-  def setup_remote(self):
-    """Sets the "remote" field for the local config."""
-    remote = str(_REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE)
-    self._config['remote'] = remote
-
-
-class LocalConfig(config_base.ReadOnlyConfig):
+@dataclasses.dataclass(frozen=True)
+class LocalConfig:
   """Create the local configuration."""
-
-  def __init__(self, working_dir: pathlib.Path):
-    super().__init__(get_local_config_path(working_dir))
-    self._cwd = working_dir
-    self.config_dir = self.cwd / config_base.RX_DIR
-
-  @property
-  def cwd(self) -> pathlib.Path:
-    return self._cwd
+  cwd: pathlib.Path
+  remote: str
+  project_name: str
+  rsync_path: str
+  should_sync: bool
 
   @property
   def rsync_source(self) -> rx_pb2.RsyncSource:
@@ -58,7 +42,7 @@ class LocalConfig(config_base.ReadOnlyConfig):
     )
 
   def get_target_env(self) -> rx_pb2.Environment:
-    remote_file: pathlib.Path = self.cwd / self._config['remote']
+    remote_file: pathlib.Path = self.cwd / self.remote
     if not remote_file.exists():
       return rx_pb2.Environment()
     try:
@@ -68,16 +52,30 @@ class LocalConfig(config_base.ReadOnlyConfig):
       raise ConfigError(f'Could not parse yaml in {remote_file}: {e}')
     return env_dict_to_pb(remote_config)
 
+  def store(self):
+    cfg_file = get_local_config_path(self.cwd)
+    with cfg_file.open(mode='wt', encoding='utf-8') as fh:
+      yaml.safe_dump({
+        'remote': self.remote,
+        'project_name': self.project_name,
+        'rsync_path': self.rsync_path,
+        'should_sync': self.should_sync
+      }, fh)
 
-def create_local_config(rxroot: pathlib.Path) -> LocalConfig:
-  """Gets or creates .rx directory."""
+
+def create_local_config(rxroot: pathlib.Path, should_sync: bool) -> LocalConfig:
+  """Gets or creates .rx directory and local config."""
   config_dir = get_local_config_path(rxroot).parent
   config_dir.mkdir(exist_ok=True, parents=True)
-  with LocalConfigWriter(rxroot) as c:
-    c.setup_remote()
-    c._config['project_name'] = _find_project_name(rxroot)
-    c._config['rsync_path'] = _get_rsync_path()
-  return LocalConfig(rxroot)
+  cfg = LocalConfig(
+    cwd=rxroot,
+    remote=str(_REMOTE.value if _REMOTE.value else _DEFAULT_REMOTE),
+    project_name=_find_project_name(rxroot),
+    rsync_path=_get_rsync_path(),
+    should_sync=should_sync,
+  )
+  cfg.store()
+  return cfg
 
 
 def find_rxroot(working_dir: pathlib.Path) -> Optional[pathlib.Path]:
@@ -94,7 +92,7 @@ def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
   cfg_path = config_base.get_config_dir(working_dir)
   for parent in cfg_path.parents:
     if config_base.get_config_dir(parent).exists():
-      return LocalConfig(parent)
+      return load_config(parent)
   return None
 
 
@@ -161,6 +159,19 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
       return start_dir.name
   # Maybe we haven't initialized git yet, use out name.
   return start_dir.name
+
+
+def load_config(rxroot: pathlib.Path) -> LocalConfig:
+  cfg_path = get_local_config_path(rxroot)
+  if not cfg_path.exists():
+    raise config_base.ConfigNotFoundError(cfg_path)
+  try:
+    with cfg_path.open(mode='rt', encoding='utf-8') as fh:
+      cfg = yaml.safe_load(fh)
+  except yaml.YAMLError as e:
+    raise ConfigError(f'Could not parse yaml in {cfg_path}: {e}')
+  cfg['cwd'] = rxroot
+  return LocalConfig(**cfg)
 
 
 def get_local_config_path(rxroot: pathlib.Path) -> pathlib.Path:

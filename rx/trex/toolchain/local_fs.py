@@ -9,7 +9,7 @@ from rx.client.configuration import local
 def get_manifest(local_cfg: local.LocalConfig) -> List[str]:
   dest = tempfile.mkdtemp()
   cmd = [
-      local_cfg['rsync_path'],
+      local_cfg.rsync_path,
       '--archive',
       '--compress',
       '--delete',

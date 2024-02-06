@@ -80,7 +80,7 @@ class Client:
     except local.ConfigError as e:
       raise TrexError(str(e), -1)
     req = rx_pb2.InitRequest(
-      project_name=self._local_cfg['project_name'],
+      project_name=self._local_cfg.project_name,
       rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
     )

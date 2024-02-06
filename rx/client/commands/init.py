@@ -50,7 +50,8 @@ rx setup for {self._rxroot}
     if not self._user_info_exists:
       steps.append('Create your rx account (or log in).')
     steps.append('Set up a virtual machine on AWS.')
-    steps.append(f'Copy the files in {self._rxroot} to your virtual machine.')
+    if self._cmdline.ns.sync:
+      steps.append(f'Copy the files in {self._rxroot} to your virtual machine.')
     for num, step in enumerate(steps, 1):
       message += f'{num}. {step}\n'
     message += ('\nWould you like to continue?')
@@ -81,7 +82,7 @@ Press y to continue:""", 'y')
     if self._config_exists:
       logging.info('Workspace already exists, resetting it.')
     try:
-      config = local.create_local_config(self._rxroot)
+      config = local.create_local_config(self._rxroot, self._cmdline.ns.sync)
     except FileExistsError as e:
       print(e)
       return -1
@@ -94,12 +95,28 @@ Press y to continue:""", 'y')
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)
-        cont = self._set_up_user(client)
-        if not cont:
+        if not self._set_up_user(client):
           return 0
 
-        ready_to_upload = menu.bool_prompt(
-          f"""
+        if config.should_sync:
+          if not self._should_call_init():
+            print('Okay, goodbye!')
+            return 0
+        if not menu._QUIET.value:
+          print('Great! Let\'s get down to business.')
+        return client.init()
+    except trex_client.TrexError as e:
+      sys.stderr.write(f'{e}\n')
+      sys.stderr.flush()
+      return e.code
+
+  def _should_call_init(self) -> bool:
+    """Checks if the user actually wants to upload"""
+    if not self._cmdline.ns.sync:
+      return True
+
+    return menu.bool_prompt(
+      f"""
 Upload your code
 ================
 
@@ -111,24 +128,6 @@ check what will be uploaded, you can rerun this command with --dry-run and
 modify .rxignore to exclude anything you don't want copied.
 
 Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
-        if not ready_to_upload:
-          print('Okay, goodbye!')
-          return 0
-        if not menu._QUIET.value:
-          print('Great! Let\'s get down to business.')
-        return client.init()
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
-
-  def second_try(self, client: trex_client.Client) -> int:
-    try:
-      return client.init()
-    except trex_client.TrexError as e:
-      sys.stderr.write(f'{e}\n')
-      sys.stderr.flush()
-      return e.code
 
 
 def add_parser(subparsers: argparse._SubParsersAction):
@@ -137,6 +136,11 @@ def add_parser(subparsers: argparse._SubParsersAction):
   init_cmd.add_argument(
     '--dry-run', default=False, dest='dry_run', action='store_true',
     help='Shows a list of files that would be uploaded by rx init')
+  init_cmd.add_argument(
+    '--sync', default=True, action='store_true',
+    help='If the project should be synced to/from the remote')
+  init_cmd.add_argument(
+    '--git', help='URL for the git repository to use')
   init_cmd.set_defaults(cmd=InitCommand)
 
 
