@@ -3,7 +3,6 @@
 
 # rx-specific
 .rx
-rx-out/
 
 # Git
 .git
@@ -24,3 +23,6 @@ dist/
 
 # Jupyter
 .ipynb_checkpoints
+
+# Node
+node_modules/

@@ -1,6 +1,7 @@
 """All of the info we can get without going to the server."""
 import dataclasses
 import pathlib
+import shutil
 import subprocess
 from typing import Any, Dict, Optional, Tuple
 import uuid
@@ -66,6 +67,7 @@ class LocalConfig:
 def create_local_config(rxroot: pathlib.Path, should_sync: bool) -> LocalConfig:
   """Gets or creates .rx directory and local config."""
   config_dir = get_local_config_path(rxroot).parent
+  _install_rxignore(rxroot)
   config_dir.mkdir(exist_ok=True, parents=True)
   cfg = LocalConfig(
     cwd=rxroot,
@@ -159,6 +161,14 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
       return start_dir.name
   # Maybe we haven't initialized git yet, use out name.
   return start_dir.name
+
+
+def _install_rxignore(rxroot: pathlib.Path):
+  print('source path: %s' % get_source_path())
+  source_path = get_source_path() / 'install' / IGNORE
+  destination_path = rxroot / IGNORE
+  if not destination_path.exists():
+    shutil.copy(source_path, destination_path)
 
 
 def load_config(rxroot: pathlib.Path) -> LocalConfig:

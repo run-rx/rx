@@ -13,6 +13,7 @@ packages = [
 include = [
   "rx/proto/*.py",
   "rx/proto/*.pyi",
+  "install/*",
 ]
 exclude = [
   "**/test_*.py",
