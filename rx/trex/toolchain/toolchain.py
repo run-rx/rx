@@ -29,9 +29,12 @@ class Toolchain:
       bool(self._provided_config.image.repository))
 
   def get_toolchain(self) -> List[trex_pb2.Tool]:
-    m = manifest.Manifest(local_fs.get_manifest(self._local_cfg))
-    d = lang_detector.Detector(m)
-    return [trex_pb2.Tool(name=t.name) for t in d.get_languages()]
+    try:
+      m = manifest.Manifest(local_fs.get_manifest(self._local_cfg))
+      d = lang_detector.Detector(m)
+      return [trex_pb2.Tool(name=t.name) for t in d.get_languages()]
+    except local_fs.ManifestError as e:
+      raise ToolchainError(e)
 
   def print_config(self, gc: rx_pb2.GeneratedConfig):
     if gc.unrecognized_tools:
@@ -64,3 +67,7 @@ class Toolchain:
     default_config.symlink_to(config_file)
 
     return str(config_file.relative_to(self._local_cfg.cwd))
+
+
+class ToolchainError(RuntimeError):
+  pass

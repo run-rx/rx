@@ -14,11 +14,20 @@ def get_manifest(local_cfg: local.LocalConfig) -> List[str]:
       '--compress',
       '--delete',
       '--dry-run',
-      f'--exclude-from={local_cfg.cwd / local.IGNORE}',
       '--itemize-changes',
+  ]
+  # Only add the rxignore option if the file exists.
+  rxignore = local_cfg.cwd / local.IGNORE
+  if rxignore.exists():
+    cmd.append(f'--exclude-from={rxignore}')
+  cmd += [
       f'{local_cfg.cwd}/',
-      str(dest)]
-  result = subprocess.run(cmd, check=True, capture_output=True)
+      str(dest)
+  ]
+  try:
+    result = subprocess.run(cmd, check=True, capture_output=True)
+  except subprocess.CalledProcessError as e:
+    raise ManifestError(e.stderr.decode('utf-8'))
   stdout = result.stdout.decode('utf-8')
   manifest = []
   for ln in stdout.split('\n'):
@@ -44,3 +53,7 @@ def dry_run(local_cfg: local.LocalConfig):
     pretty_name = f'{pathlib.Path(filename).name}{slash}'
     # TODO: handle file deletion.
     print(f'{tabs}{pretty_name}')
+
+
+class ManifestError(RuntimeError):
+  pass

@@ -86,10 +86,13 @@ class Client:
     )
     # If the image isn't set, take a slower path to detect what environment to
     # set up.
-    tc = toolchain.Toolchain(self._local_cfg, target_env)
-    if not tc.has_toolchain:
-      req.toolchain.extend(tc.get_toolchain())
-      logging.info('Toolchain: %s', req.toolchain)
+    try:
+      tc = toolchain.Toolchain(self._local_cfg, target_env)
+      if not tc.has_toolchain:
+        req.toolchain.extend(tc.get_toolchain())
+        logging.info('Toolchain: %s', req.toolchain)
+    except toolchain.ToolchainError as e:
+      raise TrexError(str(e), -1)
 
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')

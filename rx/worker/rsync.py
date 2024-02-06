@@ -40,15 +40,12 @@ class RsyncClient:
     assert dest.is_absolute(), f'Destination {dest} must be absolute'
     remote_path = self._upload_path / source
     daemon = f'{self._daemon_addr}::{remote_path}/'
-    cmd = [
-        self._rsync_path,
-        '--archive',
-        '--compress',
-        '--delete',
+
+    cmd = self._get_cmd_args() + [
         '--quiet',
-        f'--exclude-from={self._sync_dir / local.IGNORE}',
         daemon,
-        str(dest)]
+        str(dest),
+    ]
     return _run_rsync(cmd)
 
   def to_remote(self) -> int:
@@ -59,17 +56,26 @@ class RsyncClient:
     #
     # some/path/to/file
     #     519 100%    1.12kB/s    0:00:00 (xfer#2709, to-check=2/3377)
-    cmd = [
-        self._rsync_path,
-        '--archive',
-        '--compress',
-        '--delete',
+    cmd = self._get_cmd_args() + [
         '--inplace',
-        f'--exclude-from={self._sync_dir / local.IGNORE}',
         f'{self._sync_dir}/',
         daemon
     ]
     return _run_rsync(cmd)
+
+  def _get_cmd_args(self) -> List[str]:
+    """Returns the standard args for all rsync commands."""
+    cmd = [
+      self._rsync_path,
+      '--archive',
+      '--compress',
+      '--delete',
+    ]
+    # Only add the rxignore option if the file exists.
+    rxignore = self._sync_dir / local.IGNORE
+    if rxignore.exists():
+      cmd.append(f'--exclude-from={rxignore}')
+    return cmd
 
 
 def _run_rsync(cmd: List[str]) -> int:
