@@ -114,7 +114,13 @@ def env_dict_to_pb(env_dict: Optional[Dict[str, Any]]) -> rx_pb2.Environment:
     # Empty config comes in as None.
     return env_pb
   if 'remote' in env_dict:
-    remote_pb = rx_pb2.Remote(**env_dict['remote'])
+    remote_dict = env_dict['remote']
+    remote_pb = rx_pb2.Remote()
+    if 'hardware' in remote_dict:
+      remote_pb.hardware.CopyFrom(rx_pb2.Hardware(**remote_dict['hardware']))
+    if 'toolchain' in remote_dict:
+      for tool in remote_dict['toolchain']:
+        remote_pb.toolchain.append(rx_pb2.Tool(**tool))
     env_pb.remote.CopyFrom(remote_pb)
   if 'image' in env_dict:
     image_dict = env_dict['image']
@@ -164,7 +170,6 @@ def _find_project_name(start_dir: pathlib.Path) -> str:
 
 
 def _install_rxignore(rxroot: pathlib.Path):
-  print('source path: %s' % get_source_path())
   source_path = get_source_path() / 'install' / IGNORE
   destination_path = rxroot / IGNORE
   if not destination_path.exists():

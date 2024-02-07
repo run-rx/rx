@@ -1,4 +1,5 @@
 import argparse
+from distutils import util
 import pathlib
 import sys
 
@@ -12,6 +13,7 @@ from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.trex.toolchain import local_fs
+from rx.trex.toolchain import toolchain
 
 
 class InitCommand(command.Command):
@@ -102,13 +104,25 @@ Press y to continue:""", 'y')
           if not self._should_call_init():
             print('Okay, goodbye!')
             return 0
+          source = {}
+          source_type = 'rsync'
+        else:
+          # TODO: also support --workspace.
+          source = {
+            'url': self._cmdline.ns.git,
+            'commit': self._cmdline.ns.commit,
+          }
+          source_type = 'git'
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
-        return client.init()
+        workspace_id = client.init(source_type=source_type, source=source)
+        toolchain.Toolchain(config).save_config(
+          client.get_info(workspace_id).environment)
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
+    return 0
 
   def _should_call_init(self) -> bool:
     """Checks if the user actually wants to upload"""
@@ -137,10 +151,12 @@ def add_parser(subparsers: argparse._SubParsersAction):
     '--dry-run', default=False, dest='dry_run', action='store_true',
     help='Shows a list of files that would be uploaded by rx init')
   init_cmd.add_argument(
-    '--sync', default=True, action='store_true',
+    '--sync', default=True, type=util.strtobool,
     help='If the project should be synced to/from the remote')
   init_cmd.add_argument(
     '--git', help='URL for the git repository to use')
+  init_cmd.add_argument(
+    '--commit', default='HEAD', help='SHA of the git commit to sync to')
   init_cmd.set_defaults(cmd=InitCommand)
 
 

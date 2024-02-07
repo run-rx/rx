@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import 'google/protobuf/empty.proto';
-import 'rx/proto/trex.proto';
 
 package rx;
 
@@ -18,24 +17,20 @@ message Image {
   map<string, string> environment_variables = 5;
 }
 
+message Tool {
+  string name = 1;
+  string version = 3;
+}
+
 message Remote {
   Hardware hardware = 1;
-  repeated rx.trex.Tool toolchain = 2;
+  repeated Tool toolchain = 2;
 }
 
 // Converting this to YAML should give a valid rx config.
 message Environment {
   Remote remote = 1;
   Image image = 2;
-}
-
-message GeneratedConfig {
-  Environment config = 1;
-  // Something human-readable to describe this config.
-  string human_env_name = 2;
-  string image_decision = 3;
-  // A list of tools that weren't known by the server.
-  repeated rx.trex.Tool unrecognized_tools = 4;
 }
 
 message Delta {
@@ -78,6 +73,11 @@ message RsyncSource {
   int64 machine_id = 1;
   string directory = 2;
   bytes public_key = 3;
+}
+
+message GitSource {
+  string url = 1;
+  string commit = 2;
 }
 
 message RsyncDestination {
@@ -141,7 +141,8 @@ message InitRequest {
   string project_name = 1;
   RsyncSource rsync_source = 2;
   Environment target_env = 3;
-  repeated rx.trex.Tool toolchain = 4;
+  string source_type = 4;
+  GitSource git_source = 5;
 }
 
 message InitResponse {
@@ -149,7 +150,6 @@ message InitResponse {
   RsyncDestination rsync_dest = 2;
   string worker_addr = 3;
   string workspace_id = 4;
-  GeneratedConfig using_config = 5;
 }
 
 message InstallDepsRequest {

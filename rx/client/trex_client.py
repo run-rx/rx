@@ -74,25 +74,19 @@ class Client:
       raise TrexError(response.result.message, response.result.code)
     return response
 
-  def init(self) -> int:
+  def init(self, source_type: str, source: Dict[str, Any]) -> str:
+    """Creates a new workspace and returns its ID."""
     try:
       target_env = self._local_cfg.get_target_env()
     except local.ConfigError as e:
       raise TrexError(str(e), -1)
     req = rx_pb2.InitRequest(
       project_name=self._local_cfg.project_name,
-      rsync_source=self._local_cfg.rsync_source,
       target_env=target_env,
+      source_type=source_type,
     )
-    # If the image isn't set, take a slower path to detect what environment to
-    # set up.
-    try:
-      tc = toolchain.Toolchain(self._local_cfg, target_env)
-      if not tc.has_toolchain:
-        req.toolchain.extend(tc.get_toolchain())
-        logging.info('Toolchain: %s', req.toolchain)
-    except toolchain.ToolchainError as e:
-      raise TrexError(str(e), -1)
+    if source_type == 'git':
+      req.git_source.CopyFrom(rx_pb2.GitSource(**source))
 
     # TODO: create a threaded UserStatus class with __enter__/__exit__.
     sys.stdout.write('Finding a remote worker... ')
@@ -104,21 +98,19 @@ class Client:
       raise TrexError(f'Could not initialize worker: {e.details()}', -1)
     if resp.result.code != 0:
       if resp.result.code == rx_pb2.SUBSCRIPTION_REQUIRED:
-        print("""
+        raise TrexError("""
 
 Whoops, you\'ll need a subscription to continue! Please run:
 
     $ rx subscribe
 
 Then retry this command.
-""")
-        return -1
+""", resp.result.code)
       else:
         raise TrexError(resp.result.message, -1)
     sys.stdout.write('Done.\n')
-    if not tc.has_toolchain:
-      tc.print_config(resp.using_config)
 
+    workspace_id = resp.workspace_id
     with remote.WritableRemote(self._local_cfg.cwd) as r:
       r['workspace_id'] = resp.workspace_id
       r['worker_addr'] = resp.worker_addr
@@ -132,9 +124,9 @@ Then retry this command.
         worker = worker_client.create_authed_client(ch, self._local_cfg)
         worker.init()
       print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
-      return 0
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
+    return workspace_id
 
   def subscribe(self) -> bool:
     if not payment.explain_subscription(self._local_cfg.cwd):

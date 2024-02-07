@@ -62,23 +62,24 @@ class Client:
       raise WorkerError(
         f'Error initializing worker {self._remote_cfg.worker_addr}', result)
 
-    # Sync sources.
-    prog = ShowLongRunningProgress(title='Syncing directory contents')
-    result = prog.run(self._rsync.to_remote)
-    if result != 0:
-      logging.info('error: %s', errno.errorcode[result])
-      raise RsyncError()
+    if self._local_cfg.should_sync:
+      # Sync sources.
+      prog = ShowLongRunningProgress(title='Syncing directory contents')
+      result = prog.run(self._rsync.to_remote)
+      if result != 0:
+        logging.info('error: %s', errno.errorcode[result])
+        raise RsyncError()
 
-    # Install deps.
     self._install_deps()
 
   def exec(self, argv: List[str]) -> int:
     cmd_str = ' '.join(argv)
     logging.info(f'Running `{cmd_str}` on {self._remote_cfg.worker_addr}')
 
-    result = self._rsync.to_remote()
-    if result != 0:
-      raise RsyncError()
+    if self._local_cfg.should_sync:
+      result = self._rsync.to_remote()
+      if result != 0:
+        raise RsyncError()
 
     rxroot = os.path.abspath(self._local_cfg.cwd)
     cwd = os.path.abspath(pathlib.Path.cwd())
@@ -123,7 +124,8 @@ Please run `rx subscribe` to continue.""")
       sys.stderr.write(f'{response.result.message}\n')
       return response.result.code
 
-    out_handler.write_outputs(self._rsync)
+    if self._local_cfg.should_sync:
+      out_handler.write_outputs(self._rsync)
 
     # Return the process's exit code.
     return response.exit_code
