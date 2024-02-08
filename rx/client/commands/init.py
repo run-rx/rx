@@ -1,6 +1,7 @@
 import argparse
 from distutils import util
 import pathlib
+import re
 import sys
 
 from absl import logging
@@ -144,6 +145,12 @@ modify .rxignore to exclude anything you don't want copied.
 Are you sure you want to upload {self._rxroot} to the cloud?""", 'y')
 
 
+def commit(value: str) -> str:
+  if value == 'HEAD' or re.fullmatch(r'[0-9A-Fa-f]{40}', value):
+    return value
+  raise argparse.ArgumentTypeError('commit must be a 40-character hash')
+
+
 def add_parser(subparsers: argparse._SubParsersAction):
   init_cmd = subparsers.add_parser(
     'init', help='Allocates and sets up a new workspace in AWS')
@@ -156,7 +163,8 @@ def add_parser(subparsers: argparse._SubParsersAction):
   init_cmd.add_argument(
     '--git', help='URL for the git repository to use')
   init_cmd.add_argument(
-    '--commit', default='HEAD', help='SHA of the git commit to sync to')
+    '--commit', default='HEAD', type=commit,
+    help='SHA of the git commit to sync to')
   init_cmd.set_defaults(cmd=InitCommand)
 
 
