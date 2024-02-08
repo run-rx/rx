@@ -59,7 +59,9 @@ class PackagingTests(unittest.TestCase):
         # Everything in the package is prefixed with 'run_rx-version/'
         pkg_path = os.path.join(f'run_rx-{tgz_version}', target)
         self.assertIn(
-          pkg_path, tar_ent, f'Missing file {pkg_path} in {tgz_path}')
+          pkg_path, tar_ent,
+          f'Missing file {pkg_path} in {tgz_path}, do you need to run "poetry '
+          'build"?')
 
 
 class TomlTests(unittest.TestCase):

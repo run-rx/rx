@@ -17,17 +17,15 @@ class LocalTests(unittest.TestCase):
   def setUp(self) -> None:
     super().setUp()
     self._rxroot = pathlib.Path(tempfile.mkdtemp())
-    local._install_local_files(self._rxroot)
 
   def tearDown(self) -> None:
     super().tearDown()
-    shutil.rmtree(self._rxroot)
 
   def test_create_default_local_config(self):
-    cfg = local.create_local_config(self._rxroot)
+    cfg = local.create_local_config(self._rxroot, False)
 
-    self.assertEqual(cfg['project_name'], self._rxroot.name)
-    self.assertEqual(cfg['remote'], '.rx/remotes/default')
+    self.assertEqual(cfg.project_name, self._rxroot.name)
+    self.assertEqual(cfg.remote, '.rx/remotes/default')
 
   @flagsaver.flagsaver(remote='test')
   def test_create_target_env(self):
@@ -42,7 +40,7 @@ class LocalTests(unittest.TestCase):
       }
     }
     self._create_remote(remote_config)
-    cfg = local.create_local_config(self._rxroot)
+    cfg = local.create_local_config(self._rxroot, False)
 
     got = cfg.get_target_env()
 
@@ -63,7 +61,7 @@ class LocalTests(unittest.TestCase):
       }
     }
     self._create_remote(remote_config, 'no-hardware')
-    cfg = local.create_local_config(self._rxroot)
+    cfg = local.create_local_config(self._rxroot, False)
 
     got = cfg.get_target_env()
 

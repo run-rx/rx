@@ -24,7 +24,12 @@ class RsyncTests(unittest.TestCase):
     super().setUp()
     FLAGS(sys.argv)
     self._cwd = pathlib.Path('/path/to/proj')
-    self._local_cfg = MockLocalConfig({'rsync_path': '/usr/bin/rsync'})
+    self._local_cfg = local.LocalConfig(
+      cwd=self._cwd,
+      remote='default',
+      project_name='test',
+      rsync_path='/usr/bin/rsync',
+      should_sync=False)
     self._remote_cfg = {
       'daemon_module': 'f1d1df3b-e046-4e88-822e-72596e5020c5',
       'worker_addr': 'abc123.trex.run-rx.com',
@@ -46,7 +51,6 @@ class RsyncTests(unittest.TestCase):
       '--compress',
       '--delete',
       '--quiet',
-      '--exclude-from=/path/to/proj/.rxignore',
       'abc123.trex.run-rx.com::f1d1df3b-e046-4e88-822e-72596e5020c5/rx-out/',
       str(outdir),
     ])
@@ -64,10 +68,13 @@ class RsyncTests(unittest.TestCase):
       '--compress',
       '--delete',
       '--inplace',
-      '--exclude-from=/path/to/proj/.rxignore',
       '/path/to/proj/',
       'abc123.trex.run-rx.com::f1d1df3b-e046-4e88-822e-72596e5020c5',
     ])
+
+  def test_execlude_file(self):
+    # TODO: create .rxignore using tmpfile.
+    pass
 
 
 if __name__ == '__main__':

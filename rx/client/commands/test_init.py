@@ -14,7 +14,7 @@ from rx.client.commands import init
 from rx.client.configuration import local
 
 _CMDLINE = command.CommandLine(
-  ns=argparse.Namespace(),
+  ns=argparse.Namespace(sync=False),
   remainder=[],
   original=[],
 )
@@ -47,7 +47,7 @@ class InitTests(unittest.TestCase):
     tmpdir = absltest.get_default_test_tmpdir()
     rxroot = pathlib.Path(tmpdir) / 'foo'
     rxroot.mkdir(exist_ok=True)
-    local.create_local_config(rxroot)
+    local.create_local_config(rxroot, False)
 
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
@@ -67,10 +67,16 @@ class InitTests(unittest.TestCase):
     rxroot = pathlib.Path(tmpdir) / 'foo'
     rxroot.mkdir(exist_ok=True)
 
+    cmdline = command.CommandLine(
+      ns=argparse.Namespace(sync=True),
+      remainder=[],
+      original=[],
+    )
+
     with flagsaver.flagsaver(rxroot=str(rxroot)), \
         mock.patch.object(sys, 'stdout', new=io.StringIO()) as mock_stdout, \
         mock.patch.object(sys, 'stdin', io.StringIO('y')):
-      cmd = init.InitCommand(_CMDLINE)
+      cmd = init.InitCommand(cmdline)
       cmd._show_init_message()
 
     got = mock_stdout.getvalue()
