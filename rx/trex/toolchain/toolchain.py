@@ -27,6 +27,7 @@ class Toolchain:
     remotes.mkdir(exist_ok=True, parents=True)
 
     datestr = datetime.date.today().strftime('%Y%m%d')
+    config_name = config_name.replace('/', '-')
     config_file = remotes / f'{config_name}-{datestr}.yaml'
     # This could overlap with an existing config file which is okay. Just
     # overwrite.
