@@ -13,7 +13,7 @@ import yaml
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.18'
+VERSION = '0.0.19'
 
 IGNORE = pathlib.Path('.rxignore')
 REMOTE_DIR = config_base.RX_DIR / 'remotes'
