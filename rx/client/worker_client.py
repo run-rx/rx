@@ -160,6 +160,9 @@ Please run `rx subscribe` to continue.""")
     if response.result.code:
       raise WorkerError(message=None, result=response.result)
 
+    if self._local_cfg.should_sync:
+      self._rsync.from_remote('.', self._local_cfg.cwd)
+
 
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
   lm = login.LoginManager(local_cfg.cwd)
