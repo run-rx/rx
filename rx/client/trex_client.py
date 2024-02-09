@@ -16,7 +16,6 @@ from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.shared import progress_bar
-from rx.trex.toolchain import toolchain
 from rx.proto import rx_pb2
 from rx.proto import rx_pb2_grpc
 
@@ -62,7 +61,7 @@ class Client:
     return user.User(self._local_cfg.cwd, email)
 
   def get_info(self, workspace_id: str) -> rx_pb2.GetWorkspaceInfoResponse:
-    request = rx_pb2.GetWorkspaceInfoRequest(workspace_id=workspace_id)
+    request = rx_pb2.GenericRequest(workspace_id=workspace_id)
     try:
       response = self._stub.GetWorkspaceInfo(request, metadata=self._metadata)
     except grpc.RpcError as e:
@@ -142,7 +141,7 @@ Then retry this command.
     print(
       'Your workspace was stowed, please stand by while it is set up on a new '
       'machine.')
-    request = rx_pb2.UnfreezeRequest(workspace_id=workspace_id)
+    request = rx_pb2.GenericRequest(workspace_id=workspace_id)
     status = None
     for status in self._stub.Unfreeze(request, metadata=self._metadata):
       sys.stdout.write('.')
@@ -178,7 +177,7 @@ Then retry this command.
     if result and result.code != 0:
       raise TrexError(f'Error saving workspace: {result.message}', result)
 
-    finish_req = rx_pb2.CommitFinishRequest(workspace_id=workspace_id)
+    finish_req = rx_pb2.GenericRequest(workspace_id=workspace_id)
     response = self._stub.CommitFinish(finish_req, metadata=self._metadata)
     result = response.result
     if result and result.code != 0:
@@ -278,12 +277,6 @@ Then retry this command.
       e = cast(grpc.Call, e)
       raise TrexError(f'Could not get user from rx: {e.details()}', -1)
     return resp.username
-
-  def _run_initial_rsync(self, remote_cfg: remote.Remote):
-    r = rsync.RsyncClient(self._local_cfg, remote_cfg)
-    return_code = r.to_remote()
-    if return_code == 0:
-      logging.info('Copied files to %s', r.host)
 
 
 class TrexError(RuntimeError):

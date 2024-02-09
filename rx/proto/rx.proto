@@ -92,6 +92,10 @@ message Execution {
 
 // Requests and responses
 
+message GenericRequest {
+  string workspace_id = 1;
+}
+
 // This just wraps Result in case an RPC wants to return more fields in the
 // future.
 message GenericResponse {
@@ -126,10 +130,6 @@ message GetUserResponse {
   string username = 2;
 }
 
-message GetWorkspaceInfoRequest {
-  string workspace_id = 2;
-}
-
 message GetWorkspaceInfoResponse {
   Result result = 1;
   string state = 2;
@@ -152,10 +152,6 @@ message InitResponse {
   string workspace_id = 4;
 }
 
-message InstallDepsRequest {
-  string workspace_id = 1;
-}
-
 message InstallDepsResponse {
   Result result = 1;
   bytes stdout = 2;
@@ -164,10 +160,6 @@ message InstallDepsResponse {
 message KillRequest {
   string workspace_id = 1;
   string execution_id = 2;
-}
-
-message UnfreezeRequest {
-  string workspace_id = 1;
 }
 
 message UnfreezeResponse {
@@ -205,10 +197,6 @@ message CommitStreamResponse {
   DockerImageProgress push_progress = 2;
 }
 
-message CommitFinishRequest {
-  string workspace_id = 1;
-}
-
 message CommitFinishResponse {
   Result result = 1;
   Image image = 2;
@@ -225,18 +213,14 @@ message StopResponse {
   Image image = 3;
 }
 
-message WorkerInitRequest {
-  string workspace_id = 1;
-}
-
 message WorkerInitResponse {
   Result result = 1;
   DockerImageProgress pull_progress = 2;
 }
 
 service ExecutionService {
-  rpc Init(WorkerInitRequest) returns (stream WorkerInitResponse) {}
-  rpc InstallDeps(InstallDepsRequest) returns (stream InstallDepsResponse) {}
+  rpc Init(GenericRequest) returns (stream WorkerInitResponse) {}
+  rpc InstallDeps(GenericRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(stream ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
 }
@@ -244,14 +228,13 @@ service ExecutionService {
 service SetupService {
   rpc CheckSubscription(google.protobuf.Empty) returns (GenericResponse) {}
   rpc CommitStream(CommitStreamRequest) returns (stream CommitStreamResponse) {}
-  rpc CommitFinish(CommitFinishRequest) returns (CommitFinishResponse) {}
+  rpc CommitFinish(GenericRequest) returns (CommitFinishResponse) {}
   rpc GetSubscribeInfo(google.protobuf.Empty)
     returns (GetSubscribeInfoResponse) {}
   rpc GetUser(google.protobuf.Empty) returns (GetUserResponse) {}
-  rpc GetWorkspaceInfo(GetWorkspaceInfoRequest)
-    returns (GetWorkspaceInfoResponse) {}
+  rpc GetWorkspaceInfo(GenericRequest) returns (GetWorkspaceInfoResponse) {}
   rpc Init(InitRequest) returns (InitResponse) {}
-  rpc Unfreeze(UnfreezeRequest) returns (stream UnfreezeResponse) {}
+  rpc Unfreeze(GenericRequest) returns (stream UnfreezeResponse) {}
   rpc SetAcls(SetAclsRequest) returns (SetAclsResponse) {}
   rpc SetUsername(SetUsernameRequest) returns (GenericResponse) {}
   rpc Stop(StopRequest) returns (stream StopResponse) {}

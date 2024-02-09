@@ -45,7 +45,7 @@ class Client:
 
   def init(self):
     # Get the container downloaded/running.
-    req = rx_pb2.WorkerInitRequest(workspace_id=self._remote_cfg.workspace_id)
+    req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
     resp = self._stub.Init(req, metadata=self._metadata)
     def get_progress(
         resp: Iterable[rx_pb2.WorkerInitResponse]
@@ -143,7 +143,7 @@ Please run `rx subscribe` to continue.""")
     self._stub.Kill(req, metadata=self._metadata)
 
   def _install_deps(self):
-    req = rx_pb2.InstallDepsRequest(workspace_id=self._remote_cfg.workspace_id)
+    req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
     response = None
     try:
       for response in self._stub.InstallDeps(
