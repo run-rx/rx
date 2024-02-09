@@ -44,6 +44,19 @@ class Client:
     self._current_execution_id = None
 
   def init(self):
+    if self._local_cfg.should_sync:
+      req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
+      resp = self._stub.SetupRsync(req, metadata=self._metadata)
+      if resp.HasField('result') and resp.result.code != rx_pb2.OK:
+        raise WorkerError('Error setting up rsync', resp.result)
+
+      # Sync sources.
+      prog = ShowLongRunningProgress(title='Syncing directory contents')
+      result = prog.run(self._rsync.to_remote)
+      if result != 0:
+        logging.info('error: %s', errno.errorcode[result])
+        raise RsyncError()
+
     # Get the container downloaded/running.
     req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
     resp = self._stub.Init(req, metadata=self._metadata)
@@ -61,14 +74,6 @@ class Client:
         raise WorkspaceRelocationError()
       raise WorkerError(
         f'Error initializing worker {self._remote_cfg.worker_addr}', result)
-
-    if self._local_cfg.should_sync:
-      # Sync sources.
-      prog = ShowLongRunningProgress(title='Syncing directory contents')
-      result = prog.run(self._rsync.to_remote)
-      if result != 0:
-        logging.info('error: %s', errno.errorcode[result])
-        raise RsyncError()
 
     self._install_deps()
 

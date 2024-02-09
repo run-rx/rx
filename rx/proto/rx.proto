@@ -223,6 +223,7 @@ service ExecutionService {
   rpc InstallDeps(GenericRequest) returns (stream InstallDepsResponse) {}
   rpc Exec(stream ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
+  rpc SetupRsync(GenericRequest) returns (GenericResponse) {}
 }
 
 service SetupService {
