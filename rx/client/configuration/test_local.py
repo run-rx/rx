@@ -97,6 +97,32 @@ class LocalTests(unittest.TestCase):
     )
     self.assertEqual(got, expected)
 
+  def test_create_local_cfg_with_mismatched_fields(self):
+    with tempfile.TemporaryDirectory() as rxroot_str:
+      rxroot = pathlib.Path(rxroot_str)
+      cfg_path = local.get_local_config_path(rxroot)
+      cfg_path.parent.mkdir(parents=True, exist_ok=True)
+      with cfg_path.open(mode='wt', encoding='utf-8') as fh:
+        fh.write("""color:
+  b: 155
+  g: 136
+  r: 129
+project_name: test
+remote: .rx/remotes/default
+rsync_path: /usr/bin/rsync
+""")
+      got = local.load_config(rxroot)
+
+    expected = local.LocalConfig(
+      cwd=rxroot,
+      remote='.rx/remotes/default',
+      project_name='test',
+      rsync_path='/usr/bin/rsync',
+      should_sync=True,
+      daemon_port=8478,
+    )
+    self.assertEqual(got, expected)
+
   def _create_remote(self, cfg: Dict[str, Any], remote_name: str = 'test'):
     remote_config_file = self._rxroot / remote_name
     with remote_config_file.open(mode='wt', encoding='utf-8') as fh:

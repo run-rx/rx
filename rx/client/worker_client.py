@@ -4,7 +4,7 @@ import pathlib
 import sys
 import threading
 import time
-from typing import Callable, Generator, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import Callable, Generator, Iterable, Iterator, List, Optional, Tuple, TypeVar, cast
 
 from absl import flags
 from absl import logging
@@ -147,6 +147,30 @@ Please run `rx subscribe` to continue.""")
     )
     self._stub.Kill(req, metadata=self._metadata)
 
+  def forward_to_port(
+      self, port: int, stream: Iterator[bytes],
+  ) -> Iterator[bytes]:
+    workspace_id = self._remote_cfg.workspace_id
+    def _make_req(
+        stream: Iterator[bytes]
+    ) -> Iterator[rx_pb2.PortForwardRequest]:
+      for frame in stream:
+        yield rx_pb2.PortForwardRequest(
+          workspace_id=workspace_id, port=port, frame=frame)
+    try:
+      for resp in self._stub.PortForward(
+          _make_req(stream), metadata=self._metadata):
+        if resp.HasField('result') and resp.result.code != 0:
+          raise WorkerError(resp.result)
+        yield resp.frame
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      if e.code() == grpc.StatusCode.UNAVAILABLE:
+        raise DisconnectionError()
+      raise WorkerError(f'Error forwarding to {port}: {e.details()}')
+    # Signal end of response.
+    yield b''
+
   def _install_deps(self):
     req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
     response = None
@@ -222,6 +246,10 @@ class ShowLongRunningProgress:
       sys.stdout.write(self._message)
       sys.stdout.flush()
       time.sleep(self._sleep_secs)
+
+
+class DisconnectionError(RuntimeError):
+  pass
 
 
 class RsyncError(WorkerError):

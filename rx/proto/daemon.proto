@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+import 'google/protobuf/empty.proto';
+import 'rx/proto/rx.proto';
+
+package rx.daemon;
+
+message ClosePortRequest {
+  int32 port = 1;
+}
+
+message GetPortsResponse {
+  rx.Result result = 1;
+
+  message Port {
+    int32 port = 1;
+    int32 local_port = 2;
+  }
+  repeated Port ports = 2;
+}
+
+message OpenPortRequest {
+  // Workspace port to forward.
+  int32 port = 1;
+  // Port to map it to locally.
+  int32 local_port = 2;
+}
+
+service PortForwardingService {
+  rpc ClosePort(OpenPortRequest) returns (rx.GenericResponse) {}
+  rpc GetPorts(google.protobuf.Empty) returns (GetPortsResponse) {}
+  rpc OpenPort(OpenPortRequest) returns (rx.GenericResponse) {}
+}

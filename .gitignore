@@ -5,6 +5,7 @@ __pycache__
 *.ipynb
 .rx
 rx-out
+rx/proto/daemon_pb2*
 rx/proto/rx_pb2*
 *.log
 *.spec

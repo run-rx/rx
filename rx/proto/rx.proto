@@ -56,6 +56,7 @@ enum StatusCode {
   SUBSCRIPTION_REQUIRED = 5;
   // errno.h-style
   EAGAIN = 11;
+  EADDRINUSE = 112;
   // HTTP-style.
   MOVED = 301;
 }
@@ -118,6 +119,17 @@ message ExecResponse {
   repeated string output_files = 5;
   // The numeric code that the process exits with.
   int32 exit_code = 6;
+}
+
+message PortForwardRequest {
+  string workspace_id = 1;
+  int32 port = 2;
+  bytes frame = 3;
+}
+
+message PortForwardResponse {
+  Result result = 1;
+  bytes frame = 2;
 }
 
 message GetSubscribeInfoResponse {
@@ -224,6 +236,7 @@ service ExecutionService {
   rpc Exec(stream ExecRequest) returns (stream ExecResponse) {}
   rpc Kill(KillRequest) returns (google.protobuf.Empty) {}
   rpc SetupRsync(GenericRequest) returns (GenericResponse) {}
+  rpc PortForward(stream PortForwardRequest) returns (stream PortForwardResponse) {}
 }
 
 service SetupService {

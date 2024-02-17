@@ -15,6 +15,8 @@ from rx.proto import rx_pb2
 
 VERSION = '0.0.19'
 
+# Port the rx-daemon listens on.
+DEFAULT_DAEMON_PORT = 8478
 IGNORE = pathlib.Path('.rxignore')
 REMOTE_DIR = config_base.RX_DIR / 'remotes'
 
@@ -33,7 +35,8 @@ class LocalConfig:
   remote: str
   project_name: str
   rsync_path: str
-  should_sync: bool
+  should_sync: bool = True
+  daemon_port: int = DEFAULT_DAEMON_PORT
 
   @property
   def rsync_source(self) -> rx_pb2.RsyncSource:
@@ -60,8 +63,12 @@ class LocalConfig:
         'remote': self.remote,
         'project_name': self.project_name,
         'rsync_path': self.rsync_path,
-        'should_sync': self.should_sync
+        'should_sync': self.should_sync,
+        'daemon_port': self.daemon_port,
       }, fh)
+
+  def get_daemon_pid_file(self) -> pathlib.Path:
+    return config_base.get_config_dir(self.cwd) / 'daemon.pid'
 
 
 def create_local_config(rxroot: pathlib.Path, should_sync: bool) -> LocalConfig:
@@ -96,6 +103,21 @@ def find_local_config(working_dir: pathlib.Path) -> Optional[LocalConfig]:
     if config_base.get_config_dir(parent).exists():
       return load_config(parent)
   return None
+
+
+def get_local_config() -> LocalConfig:
+  """Returns the local config, if it exists, otherwise raises ConfigNotFound."""
+  if config_base.RX_ROOT.value:
+    rxroot = pathlib.Path(config_base.RX_ROOT.value)
+  else:
+    rxroot = find_rxroot(pathlib.Path.cwd())
+    if not rxroot:
+      raise config_base.ConfigNotFoundError(
+        pathlib.Path('.'), 'Run `rx init` first!')
+  cfg = find_local_config(rxroot)
+  if not cfg:
+    raise config_base.ConfigNotFoundError(rxroot, 'Run `rx init` first!')
+  return cfg
 
 
 def get_source_path() -> pathlib.Path:
@@ -182,11 +204,13 @@ def load_config(rxroot: pathlib.Path) -> LocalConfig:
     raise config_base.ConfigNotFoundError(cfg_path)
   try:
     with cfg_path.open(mode='rt', encoding='utf-8') as fh:
-      cfg = yaml.safe_load(fh)
+      cfg: Dict[str, Any] = yaml.safe_load(fh)
   except yaml.YAMLError as e:
     raise ConfigError(f'Could not parse yaml in {cfg_path}: {e}')
   cfg['cwd'] = rxroot
-  return LocalConfig(**cfg)
+  # Get all of the field names we expect.
+  fields = [f.name for f in dataclasses.fields(LocalConfig)]
+  return LocalConfig(**{k: v for k, v in cfg.items() if k in fields})
 
 
 def get_local_config_path(rxroot: pathlib.Path) -> pathlib.Path:

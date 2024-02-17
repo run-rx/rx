@@ -24,6 +24,7 @@ from absl.flags import argparse_flags
 
 from rx.client import worker_client
 from rx.client.commands import command
+from rx.client.commands import daemon
 from rx.client.commands import init
 from rx.client.commands import runner
 from rx.client.commands import stop
@@ -59,6 +60,7 @@ def get_subcommand_parser(
     .add_parser('help', help='Show help message for a given command')
     .set_defaults(cmd=help_cmd)
   )
+  daemon.add_parser(subparsers)
   init.add_parser(subparsers)
   runner.add_parser(subparsers)
   stop.add_parser(subparsers)
