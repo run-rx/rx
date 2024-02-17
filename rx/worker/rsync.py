@@ -18,7 +18,7 @@ class RsyncClient:
     self._cfg = remote_cfg
     self._rsync_path = local_cfg.rsync_path
     self._daemon_addr = self._cfg['worker_addr']
-    if config_base.is_local():
+    if config_base.is_local(self._daemon_addr):
       # Remove the port (rsync isn't listening on 50051).
       self._daemon_addr = self._daemon_addr.split(':')[0]
 

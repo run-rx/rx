@@ -72,8 +72,8 @@ def get_config_dir(rxroot: pathlib.Path) -> pathlib.Path:
   return rxroot / RX_DIR / TREX_HOST.value / 'config'
 
 
-def is_local() -> bool:
-  return TREX_HOST.value.startswith('localhost')
+def is_local(addr: str) -> bool:
+  return addr.startswith('localhost') or addr == '127.0.0.1'
 
 
 class ConfigNotFoundError(FileNotFoundError):
