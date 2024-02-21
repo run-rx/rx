@@ -60,6 +60,7 @@ def start_daemon():
   with daemon.Daemonizer(local_cfg.cwd):
     _configure_logging()
     _start_server(_PORT.value, local_cfg)
+  logging.info('Exiting.')
 
 
 def main(argv: Sequence[str]):

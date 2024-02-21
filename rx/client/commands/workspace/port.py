@@ -6,6 +6,7 @@ from rx.client.commands import daemon
 from rx.daemon import client
 from rx.daemon import pidfile
 
+
 class Command(daemon.DaemonCommand):
   """Parent class that handles connecting to the daemon RPC server."""
 
@@ -15,6 +16,9 @@ class Command(daemon.DaemonCommand):
 
   def _run(self) -> int:
     if not self._pidfile.is_running():
+      pretty_file = self._pidfile.filename.relative_to(self.local_config.cwd)
+      print(f'Daemon specified in {pretty_file} isn\'t running.')
+
       # Daemon isn't running, attempt to start.
       # This hangs if we open a GRPC channel before forking, so only check the
       # pid file before the get_channel below.

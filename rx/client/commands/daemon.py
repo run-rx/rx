@@ -49,7 +49,7 @@ class StopCommand(DaemonCommand):
       pid = self._pidfile.pid
       done = self.kill_by_pid(pid)
       if not done:
-        print(f'\nCould not find process {pid}, attempting to connect to the '
+        print(f'Could not find process {pid}, attempting to connect to the '
               'daemon.')
     except pidfile.NotFoundError:
       nice_path = self._pidfile.filename.relative_to(self.local_config.cwd)
@@ -102,7 +102,7 @@ class StopCommand(DaemonCommand):
     except ProcessLookupError:
       # Process isn't running, remove the pid file for it.
       self._pidfile.delete()
-      print()  # Newline.
+      print(' not found.')
       return False
     print(' stopped.')
     return True
