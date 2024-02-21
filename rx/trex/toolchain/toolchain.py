@@ -36,10 +36,10 @@ class Toolchain:
 
     # Create soft link.
     default_config = remotes / 'default'
-    if default_config.is_symlink():
+    if default_config.is_symlink() and not default_config.exists():
       default_config.unlink()
-    # .rx/remote/default -> python-cpu.yaml
-    default_config.symlink_to(config_file)
+      # .rx/remote/default -> python-cpu.yaml
+      default_config.symlink_to(config_file)
 
     return str(config_file.relative_to(self._local_cfg.cwd))
 
