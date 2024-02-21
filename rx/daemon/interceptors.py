@@ -1,6 +1,7 @@
 import os
 from typing import Callable, Iterable, Tuple
 
+from absl import logging
 import grpc
 
 from rx.client.configuration import local
@@ -22,6 +23,7 @@ class VersionCheck(grpc.ServerInterceptor):
           grpc.StatusCode.FAILED_PRECONDITION,
           f'Daemon is running version {local.VERSION}, expected '
           f'{client_version}')
+      logging.info('Wrong version: %s vs %s', local.VERSION, client_version)
       return grpc.unary_unary_rpc_method_handler(d)
     return continuation(handler_call_details)
 
@@ -42,6 +44,7 @@ class PidCheck(grpc.ServerInterceptor):
         context.abort(
           grpc.StatusCode.FAILED_PRECONDITION,
           f'Daemon has pid {my_pid}, expected {expected_pid}')
+      logging.info('Wrong pid: %s vs %s', my_pid, expected_pid)
       return grpc.unary_unary_rpc_method_handler(d)
     return continuation(handler_call_details)
 
