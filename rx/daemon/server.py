@@ -10,8 +10,9 @@ import grpc
 
 from rx.client.configuration import local
 from rx.daemon import daemon
-from rx.proto import daemon_pb2_grpc
+from rx.daemon import interceptors
 from rx.daemon.port_forwarding import service
+from rx.proto import daemon_pb2_grpc
 
 # Only allow local connections.
 _BIND_ADDR = '127.0.0.1'
@@ -31,6 +32,7 @@ def _start_server(port: int, local_cfg: local.LocalConfig):
   addr = f'{_BIND_ADDR}:{port}'
   server = grpc.server(
     futures.ThreadPoolExecutor(max_workers=10),
+    interceptors=(interceptors.PidCheck(), interceptors.VersionCheck()),
     # By default grpc allows multiple servers to listen on the same port. Turn
     # off that behavior.
     options=(('grpc.so_reuseport', 0),),

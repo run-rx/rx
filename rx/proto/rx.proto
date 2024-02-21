@@ -54,6 +54,7 @@ enum StatusCode {
   NOT_FOUND = 3;
   UNAUTHORIZED = 4;
   SUBSCRIPTION_REQUIRED = 5;
+  OLD_VERSION = 6;
   // errno.h-style
   EAGAIN = 11;
   EADDRINUSE = 112;

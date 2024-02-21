@@ -5,7 +5,10 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Dict
+from typing import Dict, cast
+
+import grpc
+from google.protobuf import empty_pb2
 
 from rx.client import grpc_helper
 from rx.client.commands import command
@@ -13,6 +16,7 @@ from rx.client.configuration import config_base
 from rx.client.configuration import local
 from rx.daemon import client
 from rx.daemon import pidfile
+from rx.proto import daemon_pb2_grpc
 
 
 class DaemonCommand(command.Command):
@@ -39,24 +43,69 @@ class StopCommand(DaemonCommand):
   """Save the current state on the remote."""
 
   def _run(self) -> int:
+    # Try to kill by pid, if we know it.
+    done = False
     try:
       pid = self._pidfile.pid
+      done = self.kill_by_pid(pid)
+      if not done:
+        print(f'\nCould not find process {pid}, attempting to connect to the '
+              'daemon.')
     except pidfile.NotFoundError:
       nice_path = self._pidfile.filename.relative_to(self.local_config.cwd)
       print(f'Could not find {nice_path}, is the daemon still running?')
-      return -1
 
+    # If that didn't work/we didn't have the pid, kill via sending a request
+    # and getting its pid that way.
+    if not done:
+      daemon_addr = f'localhost:{self.local_config.daemon_port}'
+      print(f'Attempting to connect to {daemon_addr}.')
+      done = self.connect_to_daemon_and_kill(daemon_addr)
+      if not done:
+        print(
+          'Couldn\'t connect to the daemon, maybe a different process is '
+          f'running at {daemon_addr}.')
+        return -1
+
+    return 0
+
+  def connect_to_daemon_and_kill(self, daemon_addr: str) -> bool:
+    """Returns if the daemon is no longer running."""
+    try:
+      with grpc_helper.get_channel(daemon_addr) as ch:
+        stub = daemon_pb2_grpc.PortForwardingServiceStub(ch)
+        stub.GetPorts(
+          empty_pb2.Empty(),
+          # We don't have a pid to send.
+          metadata=(('cv', local.VERSION), ('pid', 'unknown')))
+        assert False, (
+          'If the daemon was running at the right version/pid, killing by pid '
+          'should have worked')
+    except grpc.RpcError as e:
+      e = cast(grpc.Call, e)
+      try:
+        client.handle_rpc_error(e)
+      except client.RetryError:
+        # Killed the existing daemon.
+        return True
+      except client.DaemonUnavailable:
+        # We could not connect to the daemon.
+        print('Could not connect and kill.')
+        return True
+      print(f'Request failed: {e.details()}')
+      return False
+
+  def kill_by_pid(self, pid: int) -> bool:
     try:
       sys.stdout.write(f'Stopping daemon process {pid}...')
       os.kill(pid, signal.SIGTERM)
     except ProcessLookupError:
       # Process isn't running, remove the pid file for it.
       self._pidfile.delete()
-      print(f'\nCould not find process {pid}, is daemon still running?')
-      return -1
-
-    print('stopped.')
-    return 0
+      print()  # Newline.
+      return False
+    print(' stopped.')
+    return True
 
 
 class InfoCommand(DaemonCommand):
@@ -99,6 +148,7 @@ def start_daemon(local_cfg: local.LocalConfig) -> bool:
   # Now (try to) connect to it to make sure it's running.
   time.sleep(1)
   sys.stdout.write('Checking daemon is running...')
+  sys.stdout.flush()
   daemon_addr = f'localhost:{port}'
   with grpc_helper.get_channel(daemon_addr) as ch:
     cli = client.Client(ch, local_cfg)
@@ -109,6 +159,7 @@ def start_daemon(local_cfg: local.LocalConfig) -> bool:
         sys.stdout.write(' Connected!\n')
         return True
       sys.stdout.write('.')
+      sys.stdout.flush()
   logfile = f'{tempfile.gettempdir()}/rx-daemon.INFO'
   print(f'Unable to connect to daemon, check {logfile} for details')
   return False
