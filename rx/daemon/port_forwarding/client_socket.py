@@ -1,10 +1,3 @@
-"""Port forwarding binary.
-
-Can be launched separately with:
-
-    python -m rx.client.port_forwarding.port_forwarder --port=12345 \
-    >  --local-port=12346  # Optional
-"""
 import queue
 import socket
 import threading
@@ -17,7 +10,6 @@ from absl import logging
 from rx.client import worker_client
 
 _FRAME_SIZE = 1024
-
 
 
 class Connection:
@@ -93,7 +85,6 @@ class Connection:
         yield self._request_queue.get_nowait()
       except queue.Empty:
         time.sleep(0)
-    logging.info('done pulling from local req queue')
 
   def recv_from_local(self):
     """Receives bytes from the local sock and puts them in a queue."""
@@ -109,7 +100,6 @@ class Connection:
     except OSError:
       logging.exception('Error in recv')
     finally:
-      logging.info('Setting req done flag')
       self._done_with_requests.set()
 
   def remote_to_local(self):
