@@ -94,7 +94,6 @@ Press y to continue:""", 'y')
       local_fs.dry_run(config)
       return 0
 
-    client = None
     try:
       with grpc_helper.get_channel(config_base.TREX_HOST.value) as ch:
         client = trex_client.Client(ch, config, auth_metadata=None)

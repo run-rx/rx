@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 
 from absl import logging
 from google.protobuf import json_format
@@ -12,7 +13,14 @@ class Toolchain:
   def __init__(self, local_cfg: local.LocalConfig) -> None:
     self._local_cfg = local_cfg
 
-  def save_config(self, config: rx_pb2.Environment):
+  def save_config(self, config: rx_pb2.Environment) -> Optional[str]:
+    starting_config = (
+      self._local_cfg.get_target_env().SerializeToString(deterministic=True))
+    ending_config = config.SerializeToString(deterministic=True)
+    if starting_config == ending_config:
+      logging.info('Start and end remote configs are the same, not saving.')
+      return None
+
     config_str = yaml.safe_dump(
       json_format.MessageToDict(
         config,
@@ -21,6 +29,7 @@ class Toolchain:
     )
     config_file = self._write_config(config_str, config.image.repository)
     logging.info('Config written to %s', config_file)
+    return config_file
 
   def _write_config(self, config: str, config_name: str) -> str:
     remotes = self._local_cfg.cwd / local.REMOTE_DIR
