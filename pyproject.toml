@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "run-rx"
-version = "0.0.19"
+version = "0.0.20"
 description = "A tool to simplify remote execution"
 authors = ["Kris Chodorow <k.chodorow@gmail.com>"]
 license = "LICENSE.txt"

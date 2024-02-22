@@ -13,7 +13,7 @@ import yaml
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.19'
+VERSION = '0.0.20'
 
 # Port the rx-daemon listens on.
 DEFAULT_DAEMON_PORT = 8478
@@ -32,9 +32,9 @@ _DEFAULT_REMOTE = REMOTE_DIR / 'default'
 class LocalConfig:
   """Create the local configuration."""
   cwd: pathlib.Path
-  remote: str
   project_name: str
   rsync_path: str
+  remote: str = str(_DEFAULT_REMOTE)
   should_sync: bool = True
   daemon_port: int = DEFAULT_DAEMON_PORT
 
