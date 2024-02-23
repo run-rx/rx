@@ -32,6 +32,7 @@ tqdm = "^4.65.0"
 
 [tool.poetry.scripts]
 rx = 'rx.client.commands.exec:run'
+rx-daemon = 'rx.daemon.server:run'
 
 [build-system]
 requires = ["poetry-core"]

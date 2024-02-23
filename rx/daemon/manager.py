@@ -67,9 +67,7 @@ class DaemonManager:
     trex_addr = config_base.TREX_HOST.value
     # This is a vanilla Popen: the daemon is its grandchild!
     subprocess.Popen([
-      'python', '-m', 'rx.daemon.server',
-      f'--port={port}',
-      f'--trex-host={trex_addr}',
+      'rx-daemon', f'--port={port}', f'--trex-host={trex_addr}',
     ])
     print(f'Daemon started at localhost:{port}')
 
