@@ -40,7 +40,10 @@ class Client:
       handle_rpc_error(cast(grpc.Call, e))
     result = {}
     for p in resp.ports:
-      result[p.port] = p.local_port
+      if p.local_port != 0:
+        result[p.port] = p.local_port
+      else:
+        result[p.port] = p.port
     return result
 
   def open_port(self, port: int, local_port: Optional[int] = None):
