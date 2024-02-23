@@ -13,6 +13,8 @@ from rx.client import trex_client
 from rx.client.commands import command
 from rx.client.configuration import config_base
 from rx.client.configuration import local
+from rx.daemon import manager
+from rx.proto import rx_pb2
 from rx.trex.toolchain import local_fs
 from rx.trex.toolchain import toolchain
 
@@ -116,13 +118,27 @@ Press y to continue:""", 'y')
         if not menu._QUIET.value:
           print('Great! Let\'s get down to business.')
         workspace_id = client.init(source_type=source_type, source=source)
-        toolchain.Toolchain(config).save_config(
-          client.get_info(workspace_id).environment)
+        environment = client.get_info(workspace_id).environment
     except trex_client.TrexError as e:
       sys.stderr.write(f'{e}\n')
       sys.stderr.flush()
       return e.code
+
+    toolchain.Toolchain(config).save_config(environment)
+    self._open_ports(environment)
     return 0
+
+  def _open_ports(self, environment: rx_pb2.Environment):
+    if not len(environment.image.ports):
+      return
+    print('Setting up a daemon to forward ports to the local machine...')
+    daemon_mgr = manager.DaemonManager(self.local_config)
+    if not daemon_mgr.maybe_start_daemon():
+      return
+    with daemon_mgr.get_daemon_client() as cli:
+      for p in environment.image.ports:
+        print(f'\t* Forwarding {p}')
+        cli.open_port(p)
 
   def _should_call_init(self) -> bool:
     """Checks if the user actually wants to upload"""
