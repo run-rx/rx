@@ -1,22 +1,12 @@
 import argparse
 import os
 import signal
-import subprocess
 import sys
-import tempfile
-import time
-from typing import Dict, cast
+from typing import Dict
 
-import grpc
-from google.protobuf import empty_pb2
-
-from rx.client import grpc_helper
 from rx.client.commands import command
-from rx.client.configuration import config_base
-from rx.client.configuration import local
-from rx.daemon import client
+from rx.daemon import manager
 from rx.daemon import pidfile
-from rx.proto import daemon_pb2_grpc
 
 
 class DaemonCommand(command.Command):
@@ -25,6 +15,7 @@ class DaemonCommand(command.Command):
   def __init__(self, cmdline: command.CommandLine) -> None:
     super().__init__(cmdline)
     self._pidfile = pidfile.PidFile(self.local_config.cwd)
+    self._manager = manager.DaemonManager(self.local_config)
 
 
 class StartCommand(DaemonCommand):
@@ -36,7 +27,7 @@ class StartCommand(DaemonCommand):
       print('Daemon seems to already be running.')
       return 0
 
-    return 0 if start_daemon(self.local_config) else -1
+    return 0 if self._manager.start_daemon() else -1
 
 
 class StopCommand(DaemonCommand):
@@ -58,42 +49,13 @@ class StopCommand(DaemonCommand):
     # If that didn't work/we didn't have the pid, kill via sending a request
     # and getting its pid that way.
     if not done:
-      daemon_addr = f'localhost:{self.local_config.daemon_port}'
-      print(f'Attempting to connect to {daemon_addr}.')
-      done = self.connect_to_daemon_and_kill(daemon_addr)
+      done = self._manager.connect_and_kill()
       if not done:
         print(
           'Couldn\'t connect to the daemon, maybe a different process is '
-          f'running at {daemon_addr}.')
+          f'running at {self._manager.daemon_addr}.')
         return -1
-
     return 0
-
-  def connect_to_daemon_and_kill(self, daemon_addr: str) -> bool:
-    """Returns if the daemon is no longer running."""
-    try:
-      with grpc_helper.get_channel(daemon_addr) as ch:
-        stub = daemon_pb2_grpc.PortForwardingServiceStub(ch)
-        stub.GetPorts(
-          empty_pb2.Empty(),
-          # We don't have a pid to send.
-          metadata=(('cv', local.VERSION), ('pid', 'unknown')))
-        assert False, (
-          'If the daemon was running at the right version/pid, killing by pid '
-          'should have worked')
-    except grpc.RpcError as e:
-      e = cast(grpc.Call, e)
-      try:
-        client.handle_rpc_error(e)
-      except client.RetryError:
-        # Killed the existing daemon.
-        return True
-      except client.DaemonUnavailable:
-        # We could not connect to the daemon.
-        print('Could not connect and kill.')
-        return True
-      print(f'Request failed: {e.details()}')
-      return False
 
   def kill_by_pid(self, pid: int) -> bool:
     try:
@@ -131,38 +93,6 @@ def format_info(info: Dict[int, int]) -> str:
     return f'Open ports:\n{port_list}'
   else:
     return 'No open ports.'
-
-
-def start_daemon(local_cfg: local.LocalConfig) -> bool:
-  """Starts the daemon. Returns if successful."""
-  port = local_cfg.daemon_port
-  trex_addr = config_base.TREX_HOST.value
-  # This is a vanilla Popen: the daemon is its grandchild!
-  subprocess.Popen([
-    'python', '-m', 'rx.daemon.server',
-    f'--port={port}',
-    f'--trex-host={trex_addr}',
-  ])
-  print(f'Daemon started at localhost:{port}')
-
-  # Now (try to) connect to it to make sure it's running.
-  time.sleep(1)
-  sys.stdout.write('Checking daemon is running...')
-  sys.stdout.flush()
-  daemon_addr = f'localhost:{port}'
-  with grpc_helper.get_channel(daemon_addr) as ch:
-    cli = client.Client(ch, local_cfg)
-    tries = 5
-    for _ in range(tries):
-      time.sleep(1)
-      if cli.is_running():
-        sys.stdout.write(' Connected!\n')
-        return True
-      sys.stdout.write('.')
-      sys.stdout.flush()
-  logfile = f'{tempfile.gettempdir()}/rx-daemon.INFO'
-  print(f'Unable to connect to daemon, check {logfile} for details')
-  return False
 
 
 def add_parser(subparsers: argparse._SubParsersAction):

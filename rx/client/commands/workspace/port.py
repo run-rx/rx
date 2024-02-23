@@ -1,35 +1,18 @@
 import argparse
 
-from rx.client import grpc_helper
-from rx.client.commands import command
 from rx.client.commands import daemon
 from rx.daemon import client
-from rx.daemon import pidfile
 
 
 class Command(daemon.DaemonCommand):
   """Parent class that handles connecting to the daemon RPC server."""
 
-  def __init__(self, cmdline: command.CommandLine) -> None:
-    super().__init__(cmdline)
-    self._pidfile = pidfile.PidFile(self.local_config.cwd)
-
   def _run(self) -> int:
-    if not self._pidfile.is_running():
-      pretty_file = self._pidfile.filename.relative_to(self.local_config.cwd)
-      print(f'Daemon specified in {pretty_file} isn\'t running.')
-
-      # Daemon isn't running, attempt to start.
-      # This hangs if we open a GRPC channel before forking, so only check the
-      # pid file before the get_channel below.
-      if not daemon.start_daemon(self.local_config):
-        # Unable to start the daemon.
-        return -1
+    if not self._manager.maybe_start_daemon():
+      return -1
 
     # Now that we (maybe) forked, create GRPC connection.
-    daemon_addr = f'localhost:{self.local_config.daemon_port}'
-    with grpc_helper.get_channel(daemon_addr) as ch:
-      cli = client.Client(ch, self.local_config)
+    with self._manager.get_daemon_client() as cli:
       try:
         return self._call_daemon(cli)
       except client.DaemonUnavailable as e:

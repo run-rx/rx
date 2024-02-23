@@ -66,7 +66,7 @@ class Client:
 
 
 def handle_rpc_error(e: grpc.Call):
-  if e.code == grpc.StatusCode.FAILED_PRECONDITION:
+  if e.code() == grpc.StatusCode.FAILED_PRECONDITION:
     # Kill daemon.
     im = e.initial_metadata()[0]
     if im.key == 'pid':

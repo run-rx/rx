@@ -6,11 +6,14 @@ from rx.client.configuration import config_base
 
 
 class PidFile:
+  """Handle pid file management."""
+
   def __init__(self, rxroot: pathlib.Path) -> None:
     self._pidfile = config_base.get_config_dir(rxroot) / 'daemon.pid'
 
   @property
   def filename(self) -> pathlib.Path:
+    """Absolute path to the pid file."""
     return self._pidfile
 
   @property
@@ -24,10 +27,12 @@ class PidFile:
     return pid
 
   def write(self):
+    """Write the pid file."""
     with self._pidfile.open(mode='wt', encoding='utf-8') as fh:
       fh.write(f'{os.getpid()}\n')
 
   def delete(self):
+    """Removes the pid file, if it exists."""
     try:
       # missing_ok added in 3.8.
       self._pidfile.unlink()
@@ -35,6 +40,7 @@ class PidFile:
       pass
 
   def is_running(self) -> bool:
+    """Checks _something_ is running at the specified pid."""
     try:
       pid = self.pid
     except NotFoundError:
