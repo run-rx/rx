@@ -41,7 +41,6 @@ class Client:
     self._rsync = rsync.RsyncClient(local_cfg, self._remote_cfg)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
     self._metadata = local.get_grpc_metadata() + auth_metadata
-    self._current_execution_id = None
 
   def init(self):
     if self._local_cfg.should_sync:
@@ -105,13 +104,13 @@ class Client:
       sys.stderr.write(f'Error contacting {self._remote_cfg.worker_addr}: {e.details()}\n')
       return _NOT_REACHABLE
     except KeyboardInterrupt:
-      self.maybe_kill()
+      self.maybe_kill(runner)
       return SIGINT_CODE
     except RuntimeError as e:
       # Bug in grpc, probably.
       msg = str(e)
       if msg == 'cannot release un-acquired lock':
-        self.maybe_kill()
+        self.maybe_kill(runner)
         return SIGINT_CODE
       else:
         sys.stderr.write(msg)
@@ -135,15 +134,16 @@ Please run `rx subscribe` to continue.""")
     # Return the process's exit code.
     return response.exit_code
 
-  def maybe_kill(self):
+  def maybe_kill(self, runner: executor.Executor):
     """Kill the process, if it exists."""
-    if self._current_execution_id is None:
+    if not runner.execution_id:
       logging.error('No ID to kill.')
       return
 
+    logging.info(f'Sending kill for {runner.execution_id}')
     req = rx_pb2.KillRequest(
       workspace_id=self._remote_cfg.workspace_id,
-      execution_id=self._current_execution_id,
+      execution_id=runner.execution_id,
     )
     self._stub.Kill(req, metadata=self._metadata)
 

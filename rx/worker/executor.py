@@ -24,6 +24,7 @@ class Executor:
       req: rx_pb2.ExecRequest) -> None:
     self._stub = stub
     self._request = req
+    self.execution_id = None
 
   def run(
       self,
@@ -33,6 +34,8 @@ class Executor:
     response = None
     with StdinIterator(self._request) as req_it:
       for response in self._stub.Exec(req_it, metadata=metadata):
+        if response.execution_id:
+          self.execution_id = response.execution_id
         self.write(response.stdout, sys.stdout.buffer)
         self.write(response.stderr, sys.stderr.buffer)
         out_handler.handle(response)
