@@ -122,7 +122,6 @@ Then retry this command.
       with grpc_helper.get_channel(resp.worker_addr) as ch:
         worker = worker_client.create_authed_client(ch, self._local_cfg)
         worker.init()
-      print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
     except worker_client.WorkerError as e:
       raise TrexError(f'Error setting up worker {resp.worker_addr}: {e}', -1)
     return workspace_id

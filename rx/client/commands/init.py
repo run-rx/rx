@@ -126,6 +126,7 @@ Press y to continue:""", 'y')
 
     toolchain.Toolchain(config).save_config(environment)
     self._open_ports(environment)
+    print('\nDone setting up rx! To use, run:\n\n\t$ rx <your command>\n')
     return 0
 
   def _open_ports(self, environment: rx_pb2.Environment):
