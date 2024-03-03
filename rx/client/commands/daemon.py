@@ -5,6 +5,7 @@ import sys
 from typing import Dict
 
 from rx.client.commands import command
+from rx.daemon import client
 from rx.daemon import manager
 from rx.daemon import pidfile
 
@@ -49,7 +50,12 @@ class StopCommand(DaemonCommand):
     # If that didn't work/we didn't have the pid, kill via sending a request
     # and getting its pid that way.
     if not done:
-      done = self._manager.connect_and_kill()
+      try:
+        done = self._manager.connect_and_kill()
+      except client.RetryError:
+        # This is raised if the daemon was sent a kill signal, presumably
+        # successfully.
+        done = True
       if not done:
         print(
           'Couldn\'t connect to the daemon, maybe a different process is '
