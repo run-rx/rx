@@ -152,7 +152,7 @@ def env_dict_to_pb(env_dict: Optional[Dict[str, Any]]) -> rx_pb2.Environment:
     if 'repository' in image_dict:
       image_pb.repository = image_dict['repository']
     if 'tag' in image_dict:
-      image_pb.tag = image_dict['tag']
+      image_pb.tag = str(image_dict['tag'])
     if 'environment_variables' in image_dict:
       for k, v in image_dict['environment_variables'].items():
         if isinstance(v, bool):
