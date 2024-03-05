@@ -13,7 +13,7 @@ import yaml
 from rx.client.configuration import config_base
 from rx.proto import rx_pb2
 
-VERSION = '0.0.20'
+VERSION = '0.0.21'
 
 # Port the rx-daemon listens on.
 DEFAULT_DAEMON_PORT = 8478
