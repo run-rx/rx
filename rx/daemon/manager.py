@@ -75,16 +75,22 @@ class DaemonManager:
     time.sleep(1)
     sys.stdout.write('Checking daemon is running...')
     sys.stdout.flush()
+    tries = 5
     with grpc_helper.get_channel(self._daemon_addr) as ch:
-      cli = client.Client(ch, self._local_cfg)
-      tries = 5
       for _ in range(tries):
         time.sleep(1)
-        if cli.is_running():
-          sys.stdout.write(' Connected!\n')
-          return True
+        try:
+          cli = client.Client(ch, self._local_cfg)
+          if cli.is_running():
+            sys.stdout.write(' Connected!\n')
+            return True
+        except pidfile.NotFoundError:
+          # The daemon might not have created the pid file yet.
+          pass
         sys.stdout.write('.')
         sys.stdout.flush()
+
+
     logfile = f'{tempfile.gettempdir()}/rx-daemon.INFO'
     print(f'Unable to connect to daemon, check {logfile} for details')
     return False
