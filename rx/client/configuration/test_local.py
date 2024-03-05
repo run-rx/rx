@@ -123,6 +123,18 @@ rsync_path: /usr/bin/rsync
     )
     self.assertEqual(got, expected)
 
+  def test_one_port_cfg(self):
+    env_dict = {
+      'image': {
+        'ports': 12345
+      }
+    }
+
+    got = local.env_dict_to_pb(env_dict)
+
+    want = rx_pb2.Environment(image=rx_pb2.Image(ports=[12345]))
+    self.assertEqual(got, want)
+
   def _create_remote(self, cfg: Dict[str, Any], remote_name: str = 'test'):
     remote_config_file = self._rxroot / remote_name
     with remote_config_file.open(mode='wt', encoding='utf-8') as fh:

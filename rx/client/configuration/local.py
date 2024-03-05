@@ -160,7 +160,14 @@ def env_dict_to_pb(env_dict: Optional[Dict[str, Any]]) -> rx_pb2.Environment:
           v = 'true' if v else 'false'
         image_pb.environment_variables[k] = str(v)
     if 'ports' in image_dict:
-      image_pb.ports.extend(image_dict['ports'])
+      ports = image_dict['ports']
+      # Ports might be a single key-value pair due to user entry.
+      if isinstance(ports, int):
+        image_pb.ports.append(ports)
+      elif isinstance(ports, list):
+        image_pb.ports.extend(image_dict['ports'])
+      else:
+        raise ConfigError(f'Invalid port config: {ports}')
     env_pb.image.CopyFrom(image_pb)
   return env_pb
 
