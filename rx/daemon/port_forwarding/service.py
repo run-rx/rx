@@ -4,8 +4,6 @@ from absl import logging
 import grpc
 from google.protobuf import empty_pb2
 
-from rx.client import grpc_helper
-from rx.client import worker_client
 from rx.client.configuration import local
 from rx.client.configuration import remote
 from rx.proto import rx_pb2
@@ -20,8 +18,6 @@ class PortForwardingService(daemon_pb2_grpc.PortForwardingServiceServicer):
     super().__init__()
     self._local_cfg = local_cfg
     self._remote_cfg = remote.Remote(self._local_cfg.cwd)
-    ch = grpc_helper.get_channel(self._remote_cfg.worker_addr)
-    self._worker = worker_client.create_authed_client(ch, self._local_cfg)
     self._ports: Dict[int, port_forwarder.PortForwarder] = {}
 
   def GetPorts(
