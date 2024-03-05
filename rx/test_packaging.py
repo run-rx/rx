@@ -30,6 +30,7 @@ IGNORE = [
   '^requirements.txt$',
   '^requirements_dev.txt$',
   '^run_tests.py$',
+  '^wheels',
   '\\btest_.*.py$',
   '\\b__init__.py$',
   '.proto$',
