@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from rx.client.commands import daemon
 from rx.daemon import client
@@ -16,7 +17,7 @@ class Command(daemon.DaemonCommand):
       try:
         return self._call_daemon(cli)
       except client.DaemonUnavailable as e:
-        print(f'Could not connect to daemon: {e}')
+        print(f'Could not connect to daemon: {e}', file=sys.stderr)
         return -1
 
   def _call_daemon(self, daemon_cli: client.Client) -> int:
@@ -48,11 +49,13 @@ class ClosePortCommand(Command):
 
   def _call_daemon(self, daemon_cli: client.Client) -> int:
     if not self._cmdline.remainder:
-      raise argparse.ArgumentError(None, 'Port must be specified')
+      print('Error: port must be specified', file=sys.stderr)
+      return -1
     port = int(self._cmdline.remainder[0])
     if not port:
-      raise argparse.ArgumentError(
-        None, f'Invalid port number: {self._cmdline.remainder[0]}')
+      print(
+        f'Invalid port number: {self._cmdline.remainder[0]}', file=sys.stderr)
+      return -1
     daemon_cli.close_port(port)
     print(f'Closed port {port}')
     return 0
