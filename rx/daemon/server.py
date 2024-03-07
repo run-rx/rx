@@ -1,5 +1,6 @@
 from concurrent import futures
 import os
+import signal
 import tempfile
 from typing import Sequence
 
@@ -47,11 +48,21 @@ def _start_server(port: int, local_cfg: local.LocalConfig):
     else:
       logging.exception('Unknown error')
     return
-  daemon_pb2_grpc.add_PortForwardingServiceServicer_to_server(
-    service.PortForwardingService(local_cfg), server)
+  handler = service.PortForwardingService(local_cfg)
+  daemon_pb2_grpc.add_PortForwardingServiceServicer_to_server(handler, server)
+  signal.signal(signal.SIGINT, get_signal_handler(handler, server))
   server.start()
   logging.info(f'Listening on {addr}')
   server.wait_for_termination()
+
+
+def get_signal_handler(pf: service.PortForwardingService, server: grpc.Server):
+  def cleanup(signum: int, frame):
+    del signum
+    del frame
+    pf.close_ports()
+    server.stop(grace=None)
+  return cleanup
 
 
 def start_daemon():

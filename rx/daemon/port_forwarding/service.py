@@ -20,6 +20,12 @@ class PortForwardingService(daemon_pb2_grpc.PortForwardingServiceServicer):
     self._remote_cfg = remote.Remote(self._local_cfg.cwd)
     self._ports: Dict[int, port_forwarder.PortForwarder] = {}
 
+  def close_ports(self):
+    """Clean up sockets on close."""
+    for pf in self._ports.values():
+      pf.stop()
+    self._ports = {}
+
   def GetPorts(
       self, request: empty_pb2.Empty, context: grpc.ServicerContext,
   ) -> daemon_pb2.GetPortsResponse:

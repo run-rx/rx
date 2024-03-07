@@ -32,7 +32,7 @@ class StartCommand(DaemonCommand):
 
 
 class StopCommand(DaemonCommand):
-  """Save the current state on the remote."""
+  """Stops the daemon."""
 
   def _run(self) -> int:
     # Try to kill by pid, if we know it.
@@ -66,7 +66,7 @@ class StopCommand(DaemonCommand):
   def kill_by_pid(self, pid: int) -> bool:
     try:
       sys.stdout.write(f'Stopping daemon process {pid}...')
-      os.kill(pid, signal.SIGTERM)
+      os.kill(pid, signal.SIGINT)
     except ProcessLookupError:
       # Process isn't running, remove the pid file for it.
       self._pidfile.delete()
