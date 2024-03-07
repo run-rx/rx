@@ -2,6 +2,7 @@ import argparse
 import os
 import signal
 import sys
+import time
 from typing import Dict
 
 from rx.client.commands import command
@@ -20,7 +21,7 @@ class DaemonCommand(command.Command):
 
 
 class StartCommand(DaemonCommand):
-  """Save the current state on the remote."""
+  """Starts the daemon."""
 
   def _run(self) -> int:
     """Starts the daemon."""
@@ -76,8 +77,22 @@ class StopCommand(DaemonCommand):
     return True
 
 
+class RestartCommand(StopCommand):
+  """Stops the currently running daemon and starts it again."""
+
+  def _run(self) -> int:
+    """Starts the daemon."""
+    result = super()._run()
+    if result != 0:
+      # Maybe we don't care if we couldn't stop, maybe it wasn't running?
+      print('Unable to stop daemon, attempting to start a new one anyway.')
+    # I don't trust it to actually free ports immediately.
+    time.sleep(2)
+    return 0 if self._manager.start_daemon() else -1
+
+
 class InfoCommand(DaemonCommand):
-  """Save the current state on the remote."""
+  """Returns if the daemon is running and on which port."""
 
   def _run(self) -> int:
     if not self._pidfile.is_running():
@@ -106,14 +121,14 @@ def add_parser(subparsers: argparse._SubParsersAction):
     'daemon', help='Daemon management commands')
   subparsers = daemon_cmd.add_subparsers(required=True)
 
-  start_cmd = subparsers.add_parser(
-    'start', help='Starts the daemon')
+  start_cmd = subparsers.add_parser('start', help='Starts the daemon')
   start_cmd.set_defaults(cmd=StartCommand)
 
-  stop_cmd = subparsers.add_parser(
-    'stop', help='Stops the daemon')
+  stop_cmd = subparsers.add_parser('stop', help='Stops the daemon')
   stop_cmd.set_defaults(cmd=StopCommand)
 
-  status_cmd = subparsers.add_parser(
-    'info', help='Gets info about the daemon')
+  status_cmd = subparsers.add_parser('info', help='Gets info about the daemon')
   status_cmd.set_defaults(cmd=InfoCommand)
+
+  status_cmd = subparsers.add_parser('restart', help='Restarts the daemon')
+  status_cmd.set_defaults(cmd=RestartCommand)
