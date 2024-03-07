@@ -35,17 +35,23 @@ class Client:
       self,
       channel: grpc.Channel,
       local_cfg: local.LocalConfig,
-      auth_metadata: Tuple[Tuple[str, str]]):
+      login_manager: login.LoginManager):
     self._local_cfg = local_cfg
     self._remote_cfg = remote.Remote(local_cfg.cwd)
+    self._login_manager = login_manager
     self._rsync = rsync.RsyncClient(local_cfg, self._remote_cfg)
     self._stub = rx_pb2_grpc.ExecutionServiceStub(channel)
-    self._metadata = local.get_grpc_metadata() + auth_metadata
+
+  @property
+  def metadata(self) -> Tuple[Tuple[str, str], Tuple[str, str]]:
+    # Updates the token, if necessary.
+    self._login_manager.validate_login()
+    return local.get_grpc_metadata() + self._login_manager.grpc_metadata
 
   def init(self):
     if self._local_cfg.should_sync:
       req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
-      resp = self._stub.SetupRsync(req, metadata=self._metadata)
+      resp = self._stub.SetupRsync(req, metadata=self.metadata)
       if resp.HasField('result') and resp.result.code != rx_pb2.OK:
         raise WorkerError('Error setting up rsync', resp.result)
 
@@ -58,7 +64,7 @@ class Client:
 
     # Get the container downloaded/running.
     req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
-    resp = self._stub.Init(req, metadata=self._metadata)
+    resp = self._stub.Init(req, metadata=self.metadata)
     def get_progress(
         resp: Iterable[rx_pb2.WorkerInitResponse]
     ) -> Generator[rx_pb2.DockerImageProgress, None, None]:
@@ -98,7 +104,7 @@ class Client:
       workspace_id=self._remote_cfg.workspace_id, argv=argv, cwd=cwd)
     runner = executor.Executor(self._stub, request)
     try:
-      response = runner.run(self._metadata, out_handler)
+      response = runner.run(self.metadata, out_handler)
     except grpc.RpcError as e:
       e = cast(grpc.Call, e)
       sys.stderr.write(f'Error contacting {self._remote_cfg.worker_addr}: {e.details()}\n')
@@ -145,7 +151,7 @@ Please run `rx subscribe` to continue.""")
       workspace_id=self._remote_cfg.workspace_id,
       execution_id=runner.execution_id,
     )
-    self._stub.Kill(req, metadata=self._metadata)
+    self._stub.Kill(req, metadata=self.metadata)
 
   def forward_to_port(
       self, port: int, stream: Iterator[bytes],
@@ -159,7 +165,7 @@ Please run `rx subscribe` to continue.""")
           workspace_id=workspace_id, port=port, frame=frame)
     try:
       for resp in self._stub.PortForward(
-          _make_req(stream), metadata=self._metadata):
+          _make_req(stream), metadata=self.metadata):
         if resp.HasField('result') and resp.result.code != 0:
           raise WorkerError(resp.result)
         yield resp.frame
@@ -175,8 +181,7 @@ Please run `rx subscribe` to continue.""")
     req = rx_pb2.GenericRequest(workspace_id=self._remote_cfg.workspace_id)
     response = None
     try:
-      for response in self._stub.InstallDeps(
-        req, metadata=self._metadata, timeout=(10 * 60)):
+      for response in self._stub.InstallDeps(req, metadata=self.metadata):
         if response.stdout:
           sys.stdout.buffer.write(response.stdout)
           sys.stdout.buffer.flush()
@@ -196,7 +201,7 @@ Please run `rx subscribe` to continue.""")
 def create_authed_client(ch: grpc.Channel, local_cfg: local.LocalConfig):
   lm = login.LoginManager(local_cfg.cwd)
   lm.login()
-  return Client(ch, local_cfg, lm.grpc_metadata)
+  return Client(ch, local_cfg, lm)
 
 
 def is_subdir(*, parent: str, child: str) -> bool:
