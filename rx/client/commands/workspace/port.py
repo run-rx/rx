@@ -36,7 +36,12 @@ class OpenPortCommand(Command):
       raise argparse.ArgumentError(
         None, f'Invalid port number: {self._cmdline.remainder[0]}')
     local_port = self._cmdline.ns.local_port
-    daemon_cli.open_port(port=port, local_port=local_port)
+    try:
+      daemon_cli.open_port(port=port, local_port=local_port)
+    except client.PortError as e:
+      # Bind error.
+      print(e)
+      return -1
     local_mapping = ''
     if local_port:
       local_mapping = f' to localhost:{local_port}'

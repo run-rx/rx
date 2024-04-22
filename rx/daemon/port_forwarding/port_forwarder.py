@@ -83,9 +83,15 @@ class PortForwarder:
     self._server_sock.close()
 
   def _handle_request(
-      self, client_sock: socket.socket, worker_client: worker_client.Client):
+      self, client_sock: socket.socket, wc: worker_client.Client):
     with client_socket.Connection(client_sock) as conn:
-      conn.handle(worker_client, self._remote_port)
+      try:
+        conn.handle(wc, self._remote_port)
+      except worker_client.WorkerError:
+        # If we don't explicitly log the exception, it seems to get swallowed
+        # (probably because it's in a separate thread).
+        logging.exception('Error forwarding request')
+        return
 
   def _listen(self):
     try:

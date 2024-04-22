@@ -32,10 +32,8 @@ class Daemonizer:
   def __exit__(self, exctype: Optional[Type[BaseException]],
              excinst: Optional[BaseException],
              exctb: Optional[TracebackType]):
-    del exctype
-    del exctb
     if excinst:
-      logging.info('Got exception: %s', excinst)
+      logging.info('Got exception: [%s] [%s] [%s]', exctype, exctb, excinst)
     self.stop()
     return False
 

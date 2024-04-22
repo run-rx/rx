@@ -67,12 +67,14 @@ class DaemonManager:
     trex_addr = config_base.TREX_HOST.value
     # This is a vanilla Popen: the daemon is its grandchild!
     subprocess.Popen([
-      'rx-daemon', f'--port={port}', f'--trex-host={trex_addr}',
+      'rx-daemon',
+      f'--port={port}',
+      f'--trex-host={trex_addr}',
+      f'--rxroot={self._local_cfg.cwd}',
     ])
     print(f'Daemon started at localhost:{port}')
 
     # Now (try to) connect to it to make sure it's running.
-    time.sleep(1)
     sys.stdout.write('Checking daemon is running...')
     sys.stdout.flush()
     tries = 5
@@ -89,7 +91,6 @@ class DaemonManager:
           pass
         sys.stdout.write('.')
         sys.stdout.flush()
-
 
     logfile = f'{tempfile.gettempdir()}/rx-daemon.INFO'
     print(f'Unable to connect to daemon, check {logfile} for details')
