@@ -5,18 +5,14 @@ create, use, and share development environments. It integrates with whatever
 tools you're currently using and gives you a long-running VM in the cloud that
 is kept in sync with your local machine.
 
+Check out [our blog post](https://blog.run-rx.com/cloud-development-manifesto)
+on why we built `rx`.
+
 ## Installation
 
 Install via pip:
 
     pip install run-rx
-
-rx also requires rsync to run, make sure you have it installed:
-
-    which rsync
-
-If not, check out [its website](https://rsync.samba.org/download.html) or your
-favorite package manager to install.
 
 ## Usage
 
@@ -26,7 +22,8 @@ In the directory containing your project (often your git root), run:
 
 This will prompt you to log in (or create an account) and allocate a machine
 in the cloud for you to use. Then it will copy your project from your local
-machine to the cloud instance and install any packages that your project needs.
+machine to the cloud instance and install any dependencies that your project
+needs.
 
 It may take several minutes to allocate a machine, copy your source code, and
 install packages (depending on your project).
@@ -66,8 +63,8 @@ know by emailing eng@run-rx.com or filing an issue on
 
 ## Feedback
 
-Feel free to [file an issue](https://github.com/run-rx/rx/issues) if you have
-any questions or problems.
+Feel free to [file an issue](https://github.com/run-rx/rx/issues) or email us
+at eng@run-rx.com if you have any questions or problems.
 
 ## Running tests
 
