@@ -35,7 +35,7 @@ by prefixing it with "rx":
     rx ps ax
     rx 'echo $PATH > my-path.txt'
 
-Check out the [getting-started](https://www.run-rx.com/getting-started/)
+Check out the [getting-started](https://docs.run-rx.com/getting-started/)
 section for more examples.
 
 ## What rx does
@@ -51,7 +51,7 @@ your cloud instance and syncs outputs back to your local machine. rx hosts
 your environment on our own cloud instances, so you never have to worry about
 setup or teardown.
 
-Check out the [getting started](https://www.run-rx.com/getting-started) guide
+Check out the [getting started](https://docs.run-rx.com/getting-started) guide
 to start using rx in less than five minutes.
 
 *Note: the `rx` binary is a thin client and does not run commands on your local
